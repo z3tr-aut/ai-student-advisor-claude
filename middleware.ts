@@ -14,21 +14,20 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2])
           );
         },
       },
     }
   );
 
-  await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
   const isProtected =
@@ -40,8 +39,6 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute =
     pathname.startsWith("/login") || pathname.startsWith("/signup");
-
-  const { data: { user } } = await supabase.auth.getUser();
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
