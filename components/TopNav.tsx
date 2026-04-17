@@ -21,23 +21,7 @@ export default function TopNav({
         </nav>
       </div>
 
-      <div className="hidden lg:flex items-center bg-surface-container-low px-4 py-2 rounded-full gap-3">
-        <span className="text-label-md font-semibold text-on-surface-variant uppercase tracking-wider">
-          AI Status:
-        </span>
-        <span className="text-label-md bg-surface-container-high text-tertiary px-2 py-1 rounded-md font-medium">
-          Ready
-        </span>
-      </div>
-
       <div className="flex items-center gap-4">
-        <Link
-          href="/profile"
-          className="scale-95 active:opacity-80 transition-all text-on-surface-variant hover:text-on-surface"
-          aria-label="Profile settings"
-        >
-          <span className="material-symbols-outlined">settings</span>
-        </Link>
         <Link
           href="/profile"
           className="scale-95 active:opacity-80 transition-all text-on-surface-variant hover:text-on-surface"
