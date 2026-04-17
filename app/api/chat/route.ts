@@ -16,35 +16,6 @@ type Profile = {
   bio?: string | null;
 };
 
-// ─── RATE LIMITING ─────────────────────────────────────
-// Per user: max 10 messages per hour, max 50 per day
-const HOURLY_LIMIT = 10;
-const DAILY_LIMIT = 50;
-const HOUR_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * HOUR_MS;
-
-const rateLimits = new Map<string, { hourly: number[]; daily: number[] }>();
-
-function checkRateLimit(userId: string): { allowed: boolean; message?: string } {
-  const now = Date.now();
-  const entry = rateLimits.get(userId) || { hourly: [], daily: [] };
-
-  // Remove timestamps older than 1 hour / 1 day
-  entry.hourly = entry.hourly.filter((t) => now - t < HOUR_MS);
-  entry.daily = entry.daily.filter((t) => now - t < DAY_MS);
-
-  if (entry.hourly.length >= HOURLY_LIMIT) {
-    return { allowed: false, message: `You've reached the hourly limit of ${HOURLY_LIMIT} messages. Please try again later.` };
-  }
-  if (entry.daily.length >= DAILY_LIMIT) {
-    return { allowed: false, message: `You've reached the daily limit of ${DAILY_LIMIT} messages. Please try again tomorrow.` };
-  }
-
-  entry.hourly.push(now);
-  entry.daily.push(now);
-  rateLimits.set(userId, entry);
-  return { allowed: true };
-}
 
 function buildSystemPrompt(profile: Profile | null): string {
   const parts: string[] = [
@@ -77,10 +48,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // Check rate limit before doing anything expensive
-  const rateCheck = checkRateLimit(user.id);
-  if (!rateCheck.allowed) {
-    return NextResponse.json({ error: rateCheck.message }, { status: 429 });
+  // Check rate limit before doing anything expensive (persisted in Supabase)
+  const { data: rateCheck, error: rateErr } = await supabase.rpc("check_and_increment_rate_limit", {
+    p_user_id: user.id,
+  });
+  if (rateErr) {
+    return NextResponse.json({ error: "Rate limit check failed." }, { status: 500 });
+  }
+  if (!rateCheck?.allowed) {
+    return NextResponse.json({ error: rateCheck?.message ?? "Rate limit exceeded." }, { status: 429 });
   }
 
   let body: { messages: IncomingMsg[]; sessionId: string | null; profile: Profile | null };

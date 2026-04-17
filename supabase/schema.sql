@@ -187,6 +187,98 @@ create trigger sessions_touch_updated_at
   before update on public.chat_sessions
   for each row execute function public.touch_updated_at();
 
+-- ─── 5. RATE LIMITS ────────────────────────────────────────────────────
+--   Persistent per-user rate limiting (survives server restarts / serverless).
+create table if not exists public.rate_limits (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  hourly_count int not null default 0,
+  daily_count int not null default 0,
+  hour_window_start timestamptz not null default now(),
+  day_window_start timestamptz not null default now()
+);
+
+alter table public.rate_limits enable row level security;
+
+drop policy if exists "rate_limits_select_own" on public.rate_limits;
+create policy "rate_limits_select_own" on public.rate_limits
+  for select using (auth.uid() = user_id);
+
+-- ─── check_and_increment_rate_limit ────────────────────────────────────
+--   Atomically resets windows, checks limits, and increments counters.
+--   Returns (allowed bool, message text). Runs as postgres (security definer)
+--   so it bypasses RLS on rate_limits while still being callable by users.
+create or replace function public.check_and_increment_rate_limit(
+  p_user_id uuid,
+  p_hourly_limit int default 10,
+  p_daily_limit int default 50
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_rec public.rate_limits;
+  v_now timestamptz := now();
+begin
+  -- Upsert so first-time users get a row
+  insert into public.rate_limits (user_id, hourly_count, daily_count, hour_window_start, day_window_start)
+  values (p_user_id, 0, 0, v_now, v_now)
+  on conflict (user_id) do nothing;
+
+  -- Lock the row for this user
+  select * into v_rec from public.rate_limits where user_id = p_user_id for update;
+
+  -- Reset hourly window if it expired
+  if v_now - v_rec.hour_window_start >= interval '1 hour' then
+    v_rec.hourly_count := 0;
+    v_rec.hour_window_start := v_now;
+  end if;
+
+  -- Reset daily window if it expired
+  if v_now - v_rec.day_window_start >= interval '24 hours' then
+    v_rec.daily_count := 0;
+    v_rec.day_window_start := v_now;
+  end if;
+
+  -- Check limits before incrementing
+  if v_rec.hourly_count >= p_hourly_limit then
+    update public.rate_limits set
+      hourly_count = v_rec.hourly_count,
+      daily_count = v_rec.daily_count,
+      hour_window_start = v_rec.hour_window_start,
+      day_window_start = v_rec.day_window_start
+    where user_id = p_user_id;
+    return jsonb_build_object('allowed', false, 'message',
+      format('You''ve reached the hourly limit of %s messages. Please try again later.', p_hourly_limit));
+  end if;
+
+  if v_rec.daily_count >= p_daily_limit then
+    update public.rate_limits set
+      hourly_count = v_rec.hourly_count,
+      daily_count = v_rec.daily_count,
+      hour_window_start = v_rec.hour_window_start,
+      day_window_start = v_rec.day_window_start
+    where user_id = p_user_id;
+    return jsonb_build_object('allowed', false, 'message',
+      format('You''ve reached the daily limit of %s messages. Please try again tomorrow.', p_daily_limit));
+  end if;
+
+  -- Increment and persist
+  update public.rate_limits set
+    hourly_count = v_rec.hourly_count + 1,
+    daily_count = v_rec.daily_count + 1,
+    hour_window_start = v_rec.hour_window_start,
+    day_window_start = v_rec.day_window_start
+  where user_id = p_user_id;
+
+  return jsonb_build_object('allowed', true);
+end;
+$$;
+
+-- Grant execute to authenticated users
+grant execute on function public.check_and_increment_rate_limit(uuid, int, int) to authenticated;
+
 -- ═══════════════════════════════════════════════════════════════════════
 --   DONE. Verify with:
 --     select * from public.profiles limit 1;
