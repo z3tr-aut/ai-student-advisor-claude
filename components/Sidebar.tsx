@@ -98,19 +98,12 @@ export default function Sidebar({
 
       {/* Footer actions */}
       <div className="mt-auto px-6 flex flex-col gap-2">
-        <Link
-          href="/profile"
-          className="text-on-surface-variant hover:text-on-surface flex items-center gap-3 py-2 transition-all font-body text-body-sm font-semibold"
-        >
-          <span className="material-symbols-outlined">help</span>
-          <span>Help</span>
-        </Link>
         <button
           onClick={handleLogout}
           className="text-on-surface-variant hover:text-on-surface flex items-center gap-3 py-2 transition-all font-body text-body-sm font-semibold text-left"
         >
           <span className="material-symbols-outlined">logout</span>
-          <span>Logout</span>
+          <span>Sign Out</span>
         </button>
       </div>
     </aside>
