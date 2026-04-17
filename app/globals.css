@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────
+   DESIGN SYSTEM: The Intelligent Surface
+   Global tokens & utilities
+   ───────────────────────────────────────── */
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: #060e20;
+  color: #dee5ff;
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: "Manrope", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Scrollbar tuned for the dark palette */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #142449;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover { background: #172b54; }
+
+@layer components {
+  /* Glassmorphism recipe per DESIGN.md §2 */
+  .glass-panel {
+    background: rgba(20, 36, 73, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Primary CTA — gradient, xl rounded, no border */
+  .btn-primary {
+    @apply bg-cta-gradient text-white font-headline font-bold;
+    @apply px-6 py-3 rounded-xl;
+    @apply transition-all duration-200 ease-out;
+    @apply hover:opacity-90 active:scale-[0.98];
+    @apply shadow-[0_8px_24px_-8px_rgba(144,147,255,0.4)];
+  }
+
+  /* Secondary — surface-container-highest background */
+  .btn-secondary {
+    @apply bg-surface-container-highest text-on-surface font-body font-semibold;
+    @apply px-6 py-3 rounded-xl;
+    @apply transition-all duration-200 ease-out;
+    @apply hover:bg-surface-bright active:scale-[0.98];
+  }
+
+  /* Tertiary — transparent, primary text */
+  .btn-tertiary {
+    @apply bg-transparent text-primary font-body font-semibold;
+    @apply px-4 py-2 rounded-lg;
+    @apply transition-all duration-200;
+    @apply hover:bg-surface-bright/50;
+  }
+
+  /* Chat input — fully rounded pill */
+  .chat-input-shell {
+    @apply bg-surface-container-high rounded-full;
+    @apply transition-all duration-200;
+  }
+  .chat-input-shell:focus-within {
+    box-shadow: 0 0 0 4px rgba(144, 147, 255, 0.2);
+  }
+
+  /* Suggestion chip */
+  .suggestion-chip {
+    @apply bg-surface-variant text-on-surface-variant;
+    @apply px-4 py-2 rounded-lg text-label-md;
+    @apply transition-all duration-200;
+    @apply hover:bg-surface-bright hover:text-on-surface;
+  }
+
+  /* Advisor card — no divider lines, tonal layering */
+  .advisor-card {
+    @apply bg-surface-container-high rounded-xl p-6;
+    @apply transition-all duration-200;
+  }
+  .advisor-card:hover {
+    @apply bg-surface-container-highest;
+  }
+
+  /* Ghost border — only when container boundary is required */
+  .ghost-border {
+    border: 1px solid rgba(56, 71, 109, 0.15);
+  }
+
+  /* Nav link pattern from reference screens */
+  .nav-link {
+    @apply rounded-r-full flex items-center gap-3 px-6 py-3;
+    @apply transition-all duration-300 ease-in-out;
+    @apply font-body text-title-sm font-semibold;
+    @apply text-on-surface-variant;
+  }
+  .nav-link:hover {
+    @apply bg-surface-container-highest/50 text-on-surface;
+  }
+  .nav-link-active {
+    @apply bg-surface-container-highest text-primary;
+  }
+}
+
+/* Material Symbols sizing utility */
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  font-size: 1.25rem;
+  line-height: 1;
+  vertical-align: middle;
+  user-select: none;
+}
+
+/* Typing indicator dots */
+@keyframes pulse-dot {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+.typing-dot {
+  animation: pulse-dot 1.4s infinite ease-in-out both;
+}
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+/* Fade-in for chat messages */
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.msg-in { animation: msg-in 0.3s ease-out; }
