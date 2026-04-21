@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -82,9 +82,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Message too long. Please keep messages under 2000 characters." }, { status: 400 });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY is not configured." }, { status: 500 });
+    return NextResponse.json({ error: "GEMINI_API_KEY is not configured." }, { status: 500 });
   }
 
   if (!sessionId) {
@@ -107,31 +107,36 @@ export async function POST(req: Request) {
     content: latestUserMsg.content,
   });
 
-  const anthropic = new Anthropic({ apiKey });
+  const genAI = new GoogleGenerativeAI(apiKey);
   const systemPrompt = buildSystemPrompt(profile);
-  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
+  const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-  const apiMessages = messages
+  const geminiModel = genAI.getGenerativeModel({
+    model: modelName,
+    systemInstruction: systemPrompt,
+  });
+
+  const history = messages
+    .slice(0, -1)
     .filter((m) => m.content && m.content.trim().length > 0)
-    .map((m) => ({ role: m.role, content: m.content }));
+    .map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
       let fullText = "";
       try {
-        const response = await anthropic.messages.stream({
-          model,
-          max_tokens: 1500,
-          system: systemPrompt,
-          messages: apiMessages,
-        });
+        const chat = geminiModel.startChat({ history });
+        const result = await chat.sendMessageStream(latestUserMsg.content);
 
-        for await (const event of response) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            const chunk = event.delta.text;
-            fullText += chunk;
-            controller.enqueue(encoder.encode(chunk));
+        for await (const chunk of result.stream) {
+          const text = chunk.text();
+          if (text) {
+            fullText += text;
+            controller.enqueue(encoder.encode(text));
           }
         }
 
@@ -147,7 +152,7 @@ export async function POST(req: Request) {
 
         controller.close();
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Claude API error";
+        const msg = err instanceof Error ? err.message : "Gemini API error";
         controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`));
         controller.close();
       }
