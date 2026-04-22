@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
   { href: "/chat", label: "Chat Home", icon: "chat_bubble" },
+  { href: "/advisor", label: "Advisor", icon: "school" },
+  { href: "/courses", label: "My Courses", icon: "menu_book" },
   { href: "/profile", label: "Profile", icon: "person" },
   { href: "/recommendations", label: "Recommendations", icon: "auto_awesome" },
   { href: "/history", label: "History", icon: "history" },

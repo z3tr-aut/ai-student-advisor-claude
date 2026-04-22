@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, type Content } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
+import { advisorTools, runAdvisorTool } from "@/lib/advisor/chat-tools";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,10 +20,12 @@ type Profile = {
 
 function buildSystemPrompt(profile: Profile | null): string {
   const parts: string[] = [
-    "You are the AI Student Advisor — a warm, knowledgeable guide helping students choose majors, plan careers, and find universities.",
-    "Style: calm, precise, and editorial. Prefer short paragraphs over walls of text. When comparing options, use a brief numbered list (max 5 items).",
-    "Always ground advice in the student's profile below when relevant. If the profile is empty, ask one focused question before recommending.",
-    "When suggesting universities, note region/country and what makes each a fit. When suggesting careers, include one realistic first-step role.",
+    "You are the AI Student Advisor for the IT Faculty at Aqaba University of Technology.",
+    "Help students choose courses, understand prerequisites, and plan their next semester. Answer in the student's language (Arabic or English) matching the question.",
+    "Style: calm, precise, short paragraphs. When recommending courses, prefer a brief numbered list.",
+    "When the student asks what to register for, what they can take next semester, which courses are available, or anything about scheduling their coursework — you MUST call the `recommend_courses` tool with their target credit load (default 15) instead of guessing.",
+    "After the tool returns, read the JSON, and present the picks as a bullet list with the course code, Arabic name, and credit hours. Mention any warnings. If the tool returns an error, explain it to the student and suggest the onboarding step if relevant.",
+    "For non-scheduling questions (majors, careers, general advice), answer from your own knowledge using the student profile below.",
     "Never pretend to know real-time admission deadlines, tuition, or ranking numbers — instead, tell the student where to verify.",
   ];
 
@@ -114,9 +117,10 @@ export async function POST(req: Request) {
   const geminiModel = genAI.getGenerativeModel({
     model: modelName,
     systemInstruction: systemPrompt,
+    tools: [{ functionDeclarations: advisorTools }],
   });
 
-  const history = messages
+  const history: Content[] = messages
     .slice(0, -1)
     .filter((m) => m.content && m.content.trim().length > 0)
     .map((m) => ({
@@ -128,16 +132,45 @@ export async function POST(req: Request) {
   const stream = new ReadableStream({
     async start(controller) {
       let fullText = "";
+      const toolTraces: Array<{ tool: string; args: unknown; result: unknown }> = [];
       try {
         const chat = geminiModel.startChat({ history });
-        const result = await chat.sendMessageStream(latestUserMsg.content);
 
-        for await (const chunk of result.stream) {
-          const text = chunk.text();
-          if (text) {
-            fullText += text;
-            controller.enqueue(encoder.encode(text));
+        // Tool-calling loop: keep feeding function responses back until the model stops asking.
+        let nextMessage: string | Array<{ functionResponse: { name: string; response: Record<string, unknown> } }> =
+          latestUserMsg.content;
+        for (let turn = 0; turn < 4; turn++) {
+          const result = await chat.sendMessage(nextMessage as string); // (also accepts parts[])
+          const response = result.response;
+          const calls = response.functionCalls?.() ?? [];
+
+          if (calls.length === 0) {
+            const text = response.text();
+            if (text) {
+              fullText += text;
+              controller.enqueue(encoder.encode(text));
+            }
+            break;
           }
+
+          // Run all calls, collect the function responses
+          const responses = await Promise.all(
+            calls.map(async (call) => {
+              const payload = await runAdvisorTool(call.name, call.args as Record<string, unknown>, supabase, user.id);
+              toolTraces.push({ tool: call.name, args: call.args, result: payload });
+              return {
+                functionResponse: {
+                  name: call.name,
+                  response: payload,
+                },
+              };
+            })
+          );
+          // Emit a breadcrumb so the client can render a tool-call card
+          controller.enqueue(
+            encoder.encode(`\n\n[tool:${calls.map((c) => c.name).join(",")}]\n`)
+          );
+          nextMessage = responses as unknown as string;
         }
 
         if (fullText.trim()) {
