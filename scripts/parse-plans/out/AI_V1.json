@@ -1,0 +1,500 @@
+{
+  "source_file": "ذكاء1.pdf",
+  "plan_id": "AI_V1",
+  "major_id": "AI",
+  "major_na": "Artificial Intelligence",
+  "total_credits": null,
+  "courses": [
+    {
+      "course_code": "120101",
+      "course_name": "مهارات اللغة العربية )1(",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120102",
+      "course_name": "مهارات اللغة الإنجليزية )1(",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120103",
+      "course_name": "المهارات الحاسوبية )1(",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120111",
+      "course_name": "التربية الوطنية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120118",
+      "course_name": "العلوم العسكرية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120104",
+      "course_name": "مهارات اللغة العربية )2(",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120105",
+      "course_name": "مهارات اللغة الإنجليزية )2(",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120106",
+      "course_name": "مهارات اللغة الفرنسية )1(",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120107",
+      "course_name": "مهارات اللغة الفرنسية )2(",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120113",
+      "course_name": "تاريخ الأردن الحديث",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120114",
+      "course_name": "الثقافة الإسلامية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120115",
+      "course_name": "الحضارة الإنسانية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120116",
+      "course_name": "تاريخ الفنون",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120117",
+      "course_name": "تاريخ العلوم عند المسلمين",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120121",
+      "course_name": "مبادئ في علم الاجتماع",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120122",
+      "course_name": "مبادئ في علم النفس",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120123",
+      "course_name": "الاتصال والمجتمع",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120124",
+      "course_name": "مبادئ في التربية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120125",
+      "course_name": "تعلم التفكير المنطقي",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120131",
+      "course_name": "البيئة",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120132",
+      "course_name": "الزراعة المنزلية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120133",
+      "course_name": "العناية بالحيوانات الداجنة والمنزلية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120141",
+      "course_name": "مبادئ التغذية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120142",
+      "course_name": "الحياة والصحة",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120143",
+      "course_name": "الطب البديل: النباتات الطبية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120144",
+      "course_name": "الإسعافات الأولية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120145",
+      "course_name": "الرياضة والصحة",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "university"
+    },
+    {
+      "course_code": "120151",
+      "course_name": "التفاضل والتكامل )1(",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312111",
+      "course_name": "اساسيات تكنولوجيا المعلومات",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312151",
+      "course_name": "مقدمة في البرمجة",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312211",
+      "course_name": "تراكيب البيانات",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312271",
+      "course_name": "قواعد البيانات",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312318",
+      "course_name": "شبكات الحاسوب",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312320",
+      "course_name": "البحث العلمي و الكتابة الفنية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "120153",
+      "course_name": "الاحصاء والاحتمالات لطلبة تكنولوجيا المعلومات",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "120252",
+      "course_name": "تحليل عددي",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312161",
+      "course_name": "تصميم المنطق الرقمي",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312210",
+      "course_name": "الرياضيات المتقطعة",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312251",
+      "course_name": "البرمجة المرئية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312252",
+      "course_name": "برمجة تطبيقات الانترنت",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312253",
+      "course_name": "البرمجة الكينونية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312261",
+      "course_name": "تنظيم وتصميم الحاسوب",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312311",
+      "course_name": "تصميم وتحليل الخوارزميات",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312339",
+      "course_name": "نظم التشغيل",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313116",
+      "course_name": "اساسيات علم البيانات",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313241",
+      "course_name": "أساسيات الذكاء الأصطناعي",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313242",
+      "course_name": "الذكاء الاصطناعي المتقدم",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313316",
+      "course_name": "التنقيب في البيانات و استرجاعها",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313342",
+      "course_name": "الانظمة الخبيرة",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313350",
+      "course_name": "علم الادراك",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313368",
+      "course_name": "برمجة الذكاء الاصطناعي",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313442",
+      "course_name": "انظمة التوصية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313443",
+      "course_name": "التعرف على الانماط",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313460",
+      "course_name": "تعلم الاله",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313462",
+      "course_name": "معالجة اللغات الطبيعية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313490",
+      "course_name": "تدريب عملي ميداني في الذكاء الاصطناعي",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313499",
+      "course_name": "مشروع تخرج في الذكاء الاصطناعي",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "312214",
+      "course_name": "أخلاقيات تكنولوجيا المعلومات",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313217",
+      "course_name": "تحليل البيانات",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313273",
+      "course_name": "الواقع الافتراضي",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313372",
+      "course_name": "انترنت الاشياء",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313416",
+      "course_name": "طرق متقدمة للتنقيب في البيانات",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313455",
+      "course_name": "البيانات الكبيرة",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313456",
+      "course_name": "التعلم العميق",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313467",
+      "course_name": "الشبكات العصبونية",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313471",
+      "course_name": "الروبوتات",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "313492",
+      "course_name": "موضوعات مختارة في الذكاء الاصطناعي",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "120097",
+      "course_name": "عربي استدراكي",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "120098",
+      "course_name": "انجليزي استدراكي",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    },
+    {
+      "course_code": "120099",
+      "course_name": "حاسوب استدراكي",
+      "credit_hours": 3,
+      "prereqs": [],
+      "type": "faculty"
+    }
+  ],
+  "warnings": []
+}
