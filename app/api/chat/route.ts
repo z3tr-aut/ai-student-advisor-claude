@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenerativeAI, type Content } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
 import { advisorTools, runAdvisorTool } from "@/lib/advisor/chat-tools";
+import { buildStudentProfile, type StudentAcademicProfile } from "@/lib/advisor/fixtures";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,15 +19,39 @@ type Profile = {
 };
 
 
-function buildSystemPrompt(profile: Profile | null): string {
+function formatAcademicRecord(p: StudentAcademicProfile): string {
+  const lines: string[] = [];
+  lines.push("STUDENT ACADEMIC RECORD (authoritative — use this, do not ask the student to repeat it)");
+  lines.push(`  Student ID: ${p.stdId}` + (p.studentName ? `  (${p.studentName})` : ""));
+  lines.push(`  Major: ${p.majorName ?? "unknown"}${p.majorId ? ` (id ${p.majorId})` : ""}`);
+  lines.push(`  Approximate year: ${p.approxYear} (based on credits completed; not authoritative)`);
+  lines.push(`  Credits completed: ${p.creditsCompleted}`);
+  lines.push(`  Courses passed: ${p.passedCount}, currently enrolled: ${p.enrolledCount}, failed: ${p.failedCount}`);
+  if (p.transcript.length) {
+    lines.push("  Transcript:");
+    for (const t of p.transcript) {
+      const grade = t.grade ? ` grade ${t.grade}` : "";
+      lines.push(`    - ${t.courseId.padEnd(4)} ${t.courseName} (${t.credits}cr, ${t.status}${grade})`);
+    }
+  }
+  return lines.join("\n");
+}
+
+function buildSystemPrompt(profile: Profile | null, academic: StudentAcademicProfile | null): string {
   const parts: string[] = [
-    "You are the AI Student Advisor for the IT Faculty at Aqaba University of Technology.",
-    "Help students choose courses, understand prerequisites, and plan their next semester. Answer in the student's language (Arabic or English) matching the question.",
-    "Style: calm, precise, short paragraphs. When recommending courses, prefer a brief numbered list.",
-    "When the student asks what to register for, what they can take next semester, which courses are available, or anything about scheduling their coursework — you MUST call the `recommend_courses` tool with their target credit load (default 15) instead of guessing.",
-    "After the tool returns, read the JSON, and present the picks as a bullet list with the course code, Arabic name, and credit hours. Mention any warnings. If the tool returns an error, explain it to the student and suggest the onboarding step if relevant.",
-    "For non-scheduling questions (majors, careers, general advice), answer from your own knowledge using the student profile below.",
-    "Never pretend to know real-time admission deadlines, tuition, or ranking numbers — instead, tell the student where to verify.",
+    "You are an academic advisor chatting with a student at Aqaba University of Technology. Talk like a friendly tutor, not a formal report. Match the student's language (Arabic or English).",
+    "Tone: casual, short, direct. Plain prose. Treat it like texting a friend who happens to be smart — answer the question and stop.",
+    "Formatting rules — strictly follow:",
+    "  - The chat renders as plain text. Do NOT use markdown: no asterisks, no **bold**, no #headings, no backticks, no `*` or `-` bullet lines for emphasis. The user literally sees the asterisks.",
+    "  - When listing a few items (like courses in a schedule), put each on its own line with no leading symbol. Keep lines short.",
+    "  - Default to 1–4 short sentences. Only go longer when the student explicitly asks for detail.",
+    "Two tools are available for scheduling — always call one of them, never invent picks yourself:",
+    "  - build_schedule — use whenever the student mentions any time-of-day preference (no class before X, no class after Y) or any day to skip, or just asks for a schedule. Pass earliest_start as HH:MM, latest_end as HH:MM, excluded_days as an array of day names (Sunday/Monday/Tuesday/Wednesday/Thursday).",
+    "  - recommend_courses — use for plain 'what can I take next semester' questions with no time preference.",
+    "Default target_credits to 15 if the student didn't say.",
+    "After a tool returns, talk through the result naturally. For build_schedule, list each pick on its own line as: course name, day, start-end time. Briefly mention warnings or unscheduled courses if any. If the tool returned an error, just explain it in one sentence.",
+    "For non-scheduling questions, answer from your own knowledge using the academic record below if it's relevant.",
+    "Never make up admission deadlines, tuition, rankings — say where to verify instead.",
   ];
 
   if (profile) {
@@ -40,6 +65,11 @@ function buildSystemPrompt(profile: Profile | null): string {
     if (profile.bio) snippet.push(`Bio: ${profile.bio}`);
     if (snippet.length) parts.push("\nSTUDENT PROFILE\n" + snippet.join("\n"));
   }
+
+  if (academic) {
+    parts.push("\n" + formatAcademicRecord(academic));
+  }
+
   return parts.join("\n\n");
 }
 
@@ -110,8 +140,11 @@ export async function POST(req: Request) {
     content: latestUserMsg.content,
   });
 
+  const fixtureStdId = (user.user_metadata as { std_id?: number | string } | null | undefined)?.std_id;
+  const academic = fixtureStdId !== undefined ? buildStudentProfile(fixtureStdId) : null;
+
   const genAI = new GoogleGenerativeAI(apiKey);
-  const systemPrompt = buildSystemPrompt(profile);
+  const systemPrompt = buildSystemPrompt(profile, academic);
   const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
   const geminiModel = genAI.getGenerativeModel({
@@ -156,7 +189,7 @@ export async function POST(req: Request) {
           // Run all calls, collect the function responses
           const responses = await Promise.all(
             calls.map(async (call) => {
-              const payload = await runAdvisorTool(call.name, call.args as Record<string, unknown>, supabase, user.id);
+              const payload = await runAdvisorTool(call.name, call.args as Record<string, unknown>, supabase, user);
               toolTraces.push({ tool: call.name, args: call.args, result: payload });
               return {
                 functionResponse: {

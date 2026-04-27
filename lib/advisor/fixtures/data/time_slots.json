@@ -1,0 +1,98 @@
+[
+  {
+    "time_id": 1,
+    "day": "Sunday",
+    "start_time": "08:00:00",
+    "end_time": "09:00:00"
+  },
+  {
+    "time_id": 2,
+    "day": "Sunday",
+    "start_time": "09:00:00",
+    "end_time": "10:00:00"
+  },
+  {
+    "time_id": 3,
+    "day": "Sunday",
+    "start_time": "10:00:00",
+    "end_time": "11:00:00"
+  },
+  {
+    "time_id": 4,
+    "day": "Sunday",
+    "start_time": "11:00:00",
+    "end_time": "12:00:00"
+  },
+  {
+    "time_id": 5,
+    "day": "Monday",
+    "start_time": "08:00:00",
+    "end_time": "09:00:00"
+  },
+  {
+    "time_id": 6,
+    "day": "Monday",
+    "start_time": "09:00:00",
+    "end_time": "10:00:00"
+  },
+  {
+    "time_id": 7,
+    "day": "Monday",
+    "start_time": "10:00:00",
+    "end_time": "11:00:00"
+  },
+  {
+    "time_id": 8,
+    "day": "Monday",
+    "start_time": "11:00:00",
+    "end_time": "12:00:00"
+  },
+  {
+    "time_id": 9,
+    "day": "Tuesday",
+    "start_time": "08:00:00",
+    "end_time": "09:00:00"
+  },
+  {
+    "time_id": 10,
+    "day": "Tuesday",
+    "start_time": "09:00:00",
+    "end_time": "10:00:00"
+  },
+  {
+    "time_id": 11,
+    "day": "Tuesday",
+    "start_time": "10:00:00",
+    "end_time": "11:00:00"
+  },
+  {
+    "time_id": 12,
+    "day": "Tuesday",
+    "start_time": "11:00:00",
+    "end_time": "12:00:00"
+  },
+  {
+    "time_id": 13,
+    "day": "Wednesday",
+    "start_time": "08:00:00",
+    "end_time": "09:00:00"
+  },
+  {
+    "time_id": 14,
+    "day": "Wednesday",
+    "start_time": "09:00:00",
+    "end_time": "10:00:00"
+  },
+  {
+    "time_id": 15,
+    "day": "Wednesday",
+    "start_time": "10:00:00",
+    "end_time": "11:00:00"
+  },
+  {
+    "time_id": 16,
+    "day": "Wednesday",
+    "start_time": "11:00:00",
+    "end_time": "12:00:00"
+  }
+]

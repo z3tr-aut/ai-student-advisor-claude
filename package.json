@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "demo:schedule": "tsx --env-file=.env.local scripts/demo-schedule.ts",
+    "seed:students": "tsx --env-file=.env.local scripts/seed-test-students.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.1",

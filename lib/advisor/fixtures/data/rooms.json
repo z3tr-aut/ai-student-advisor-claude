@@ -1,0 +1,194 @@
+[
+  {
+    "room_id": 1,
+    "room_name": "A101",
+    "capacity": 80,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 2,
+    "room_name": "A102",
+    "capacity": 80,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 3,
+    "room_name": "A103",
+    "capacity": 80,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 4,
+    "room_name": "A104",
+    "capacity": 80,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 5,
+    "room_name": "A105",
+    "capacity": 80,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 6,
+    "room_name": "A106",
+    "capacity": 80,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 7,
+    "room_name": "A107",
+    "capacity": 80,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 8,
+    "room_name": "A108",
+    "capacity": 80,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 9,
+    "room_name": "A109",
+    "capacity": 80,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 10,
+    "room_name": "A110",
+    "capacity": 80,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 11,
+    "room_name": "A301",
+    "capacity": 45,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 12,
+    "room_name": "A302",
+    "capacity": 45,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 13,
+    "room_name": "A303",
+    "capacity": 45,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 14,
+    "room_name": "A304",
+    "capacity": 45,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 15,
+    "room_name": "A305",
+    "capacity": 45,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 16,
+    "room_name": "A306",
+    "capacity": 45,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 17,
+    "room_name": "A307",
+    "capacity": 45,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 18,
+    "room_name": "A308",
+    "capacity": 45,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 19,
+    "room_name": "A309",
+    "capacity": 45,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 20,
+    "room_name": "A310",
+    "capacity": 45,
+    "room_type": "Lecture"
+  },
+  {
+    "room_id": 21,
+    "room_name": "A401",
+    "capacity": 25,
+    "room_type": "Lab"
+  },
+  {
+    "room_id": 22,
+    "room_name": "A402",
+    "capacity": 25,
+    "room_type": "Lab"
+  },
+  {
+    "room_id": 23,
+    "room_name": "A403",
+    "capacity": 25,
+    "room_type": "Lab"
+  },
+  {
+    "room_id": 24,
+    "room_name": "A404",
+    "capacity": 25,
+    "room_type": "Lab"
+  },
+  {
+    "room_id": 25,
+    "room_name": "A405",
+    "capacity": 25,
+    "room_type": "Lab"
+  },
+  {
+    "room_id": 26,
+    "room_name": "A406",
+    "capacity": 25,
+    "room_type": "Lab"
+  },
+  {
+    "room_id": 27,
+    "room_name": "A407",
+    "capacity": 25,
+    "room_type": "Lab"
+  },
+  {
+    "room_id": 28,
+    "room_name": "A408",
+    "capacity": 25,
+    "room_type": "Lab"
+  },
+  {
+    "room_id": 29,
+    "room_name": "A409",
+    "capacity": 25,
+    "room_type": "Lab"
+  },
+  {
+    "room_id": 30,
+    "room_name": "A410",
+    "capacity": 25,
+    "room_type": "Lab"
+  },
+  {
+    "room_id": 31,
+    "room_name": "C201",
+    "capacity": 25,
+    "room_type": "Lab"
+  },
+  {
+    "room_id": 32,
+    "room_name": "C202",
+    "capacity": 25,
+    "room_type": "Lab"
+  }
+]
