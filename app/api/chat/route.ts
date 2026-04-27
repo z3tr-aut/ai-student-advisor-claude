@@ -199,10 +199,6 @@ export async function POST(req: Request) {
               };
             })
           );
-          // Emit a breadcrumb so the client can render a tool-call card
-          controller.enqueue(
-            encoder.encode(`\n\n[tool:${calls.map((c) => c.name).join(",")}]\n`)
-          );
           nextMessage = responses as unknown as string;
         }
 
