@@ -12,6 +12,7 @@ function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,9 +37,18 @@ function LoginForm() {
       </div>
       <div>
         <label className="block font-body text-label-lg text-on-surface-variant mb-2">Password</label>
-        <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password" placeholder="••••••••"
-          className="w-full bg-surface-container-high text-on-surface font-body text-body-md px-4 py-3 rounded-lg outline-none focus:shadow-glow transition-all" />
+        <div className="relative">
+          <input type={showPassword ? "text" : "password"} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password" placeholder="••••••••"
+            className="w-full bg-surface-container-high text-on-surface font-body text-body-md px-4 py-3 pr-12 rounded-lg outline-none focus:shadow-glow transition-all" />
+          <button type="button" onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors">
+            <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+              {showPassword ? "visibility_off" : "visibility"}
+            </span>
+          </button>
+        </div>
       </div>
       {error && <div className="bg-error-container/40 text-on-error-container px-4 py-3 rounded-lg text-body-sm">{error}</div>}
       <button type="submit" disabled={loading} className="btn-primary w-full mt-2 disabled:opacity-60 disabled:cursor-not-allowed">
