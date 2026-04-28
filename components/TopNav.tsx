@@ -16,7 +16,7 @@ export default function TopNav({
         </Link>
         <nav className="hidden md:flex gap-6">
           <NavItem href="/dashboard" label="Home" />
-          <NavItem href="/recommendations" label="Recommendations" />
+          <NavItem href="/tips" label="Study Tips" />
           <NavItem href="/history" label="Insights" />
         </nav>
       </div>

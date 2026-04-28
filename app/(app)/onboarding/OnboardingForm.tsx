@@ -84,7 +84,7 @@ export default function OnboardingForm({
       setSaving(false);
       return;
     }
-    router.push("/advisor");
+    router.push("/chat");
     router.refresh();
   }
 

@@ -102,8 +102,12 @@ type RawCourse = {
 type RawSchedule = {
   schedule_id: number;
   course_id: number;
+  course_name?: string;
+  credit_hours?: number;
   instructor_id: number | null;
+  instructor_name?: string | null;
   room_id: number | null;
+  room_name?: string | null;
   time_id: number;
   day: string;
   start_time: string;
@@ -267,6 +271,57 @@ export type TranscriptEntry = {
   status: string;
   semesterId: string;
 };
+
+export type CatalogRow = {
+  sectionId: string;
+  courseId: string;
+  courseName: string;
+  creditHours: number;
+  day: Day;
+  startMinutes: number;
+  endMinutes: number;
+  roomName: string | null;
+  instructorName: string | null;
+  capacity: number;
+  enrolledCount: number;
+};
+
+/**
+ * Read-only catalog of every section offered in the active semester, joined
+ * with course/room/instructor names and a count of currently-enrolled students.
+ *
+ * Enrollment counts come from std_course rows where status === "enrolled" and
+ * the section identifier matches schedule_id. This is fixture-mode only;
+ * Supabase mode computes the same aggregate server-side from the academic
+ * tables.
+ */
+export function loadFixtureCatalogRows(): CatalogRow[] {
+  const enrolledBySection = new Map<string, number>();
+  for (const row of rawStdCourse) {
+    if (row.status !== "enrolled") continue;
+    if (!row.section) continue;
+    const key = String(row.section);
+    enrolledBySection.set(key, (enrolledBySection.get(key) ?? 0) + 1);
+  }
+
+  return rawSchedule.map((s) => {
+    const sectionId = String(s.schedule_id);
+    const course = rawCourses.find((c) => c.course_id === s.course_id);
+    return {
+      sectionId,
+      courseId: String(s.course_id),
+      courseName: s.course_name ?? course?.course_name ?? `Course ${s.course_id}`,
+      creditHours: s.credit_hours ?? course?.credit_hours ?? 0,
+      day: toDay(s.day),
+      startMinutes: toMinutes(s.start_time),
+      endMinutes: toMinutes(s.end_time),
+      roomName: s.room_name ?? null,
+      instructorName: s.instructor_name ?? null,
+      capacity: s.capacity ?? 0,
+      enrolledCount: enrolledBySection.get(sectionId) ?? 0,
+    };
+  });
+}
 
 export function loadFixtureTranscript(stdId: number | string): TranscriptEntry[] {
   const target = Number(stdId);

@@ -67,6 +67,15 @@ h1, h2, h3, h4, h5 {
     @apply hover:bg-surface-bright/50;
   }
 
+  /* Destructive — red, used inside ConfirmDialog for destructive actions */
+  .btn-destructive {
+    @apply bg-red-600 text-white font-headline font-bold;
+    @apply px-6 py-3 rounded-xl;
+    @apply transition-all duration-200 ease-out;
+    @apply hover:bg-red-700 active:scale-[0.98];
+    @apply disabled:opacity-50;
+  }
+
   /* Chat input — fully rounded pill */
   .chat-input-shell {
     @apply bg-surface-container-high rounded-full;

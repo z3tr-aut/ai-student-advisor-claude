@@ -3,6 +3,11 @@ import { GoogleGenerativeAI, type Content } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
 import { advisorTools, runAdvisorTool } from "@/lib/advisor/chat-tools";
 import { buildStudentProfile, type StudentAcademicProfile } from "@/lib/advisor/fixtures";
+import {
+  encodeSchedulePayload,
+  type ScheduleMessageMetadata,
+  type SchedulePick,
+} from "@/lib/advisor/chat-payload";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,6 +55,8 @@ function buildSystemPrompt(profile: Profile | null, academic: StudentAcademicPro
     "  - recommend_courses — use for plain 'what can I take next semester' questions with no time preference.",
     "Default target_credits to 15 if the student didn't say.",
     "After a tool returns, talk through the result naturally. For build_schedule, list each pick on its own line as: course name, day, start-end time. Briefly mention warnings or unscheduled courses if any. If the tool returned an error, just explain it in one sentence.",
+    "Schedule acceptance lives in the UI: a build_schedule result renders an Accept button next to your message — do not pretend to save anything yourself, do not invent confirmation steps, just present the picks and let the student click Accept (the UI shows its own confirmation modal). If the student says 'save it' or 'looks good', tell them to hit Accept on the schedule above.",
+    "If the student asks to discard their schedule or significantly edit it (drop a course, swap a section), confirm in one short sentence first ('To confirm — you want to drop X and rebuild?') BEFORE calling build_schedule again. The destructive UI confirmation (Discard button on My Schedule) is separate from this — verbal confirmation is about not surprising them with a regenerated schedule.",
     "For non-scheduling questions, answer from your own knowledge using the academic record below if it's relevant.",
     "Never make up admission deadlines, tuition, rankings — say where to verify instead.",
   ];
@@ -166,6 +173,7 @@ export async function POST(req: Request) {
     async start(controller) {
       let fullText = "";
       const toolTraces: Array<{ tool: string; args: unknown; result: unknown }> = [];
+      let scheduleMetadata: ScheduleMessageMetadata | null = null;
       try {
         const chat = geminiModel.startChat({ history });
 
@@ -191,6 +199,21 @@ export async function POST(req: Request) {
             calls.map(async (call) => {
               const payload = await runAdvisorTool(call.name, call.args as Record<string, unknown>, supabase, user);
               toolTraces.push({ tool: call.name, args: call.args, result: payload });
+              if (
+                call.name === "build_schedule" &&
+                Array.isArray((payload as { picks?: unknown }).picks) &&
+                ((payload as { picks: unknown[] }).picks.length ?? 0) > 0 &&
+                !("error" in payload)
+              ) {
+                scheduleMetadata = {
+                  kind: "schedule",
+                  picks: (payload as { picks: SchedulePick[] }).picks,
+                  total_credits:
+                    typeof (payload as { total_credits?: unknown }).total_credits === "number"
+                      ? (payload as { total_credits: number }).total_credits
+                      : 0,
+                };
+              }
               return {
                 functionResponse: {
                   name: call.name,
@@ -202,12 +225,17 @@ export async function POST(req: Request) {
           nextMessage = responses as unknown as string;
         }
 
-        if (fullText.trim()) {
+        if (scheduleMetadata) {
+          controller.enqueue(encoder.encode(encodeSchedulePayload(scheduleMetadata)));
+        }
+
+        if (fullText.trim() || scheduleMetadata) {
           await supabase.from("chat_messages").insert({
             session_id: sessionId!,
             user_id: user.id,
             role: "assistant",
             content: fullText,
+            metadata: scheduleMetadata,
           });
           await supabase.from("chat_sessions").update({ updated_at: new Date().toISOString() }).eq("id", sessionId!);
         }

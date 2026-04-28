@@ -85,6 +85,7 @@ export {
   loadFixtureTimeSlots,
   loadFixtureHistory,
   loadFixtureTranscript,
+  loadFixtureCatalogRows,
   loadActiveSemester,
   resolveStudentMajorId,
   resolveStudentMajorName,
@@ -96,4 +97,5 @@ export {
   type TimeSlot,
   type Day,
   type TranscriptEntry,
+  type CatalogRow,
 } from "./loader";

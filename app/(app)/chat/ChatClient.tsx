@@ -3,8 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SuggestionChip from "@/components/SuggestionChip";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import {
+  splitSchedulePayload,
+  type MessageMetadata,
+  type SchedulePick,
+} from "@/lib/advisor/chat-payload";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = {
+  role: "user" | "assistant";
+  content: string;
+  metadata?: MessageMetadata | null;
+};
 
 type Profile = {
   full_name?: string | null;
@@ -22,6 +32,15 @@ const QUICK_REPLIES = [
   "Which universities?",
   "Skills I should build",
 ];
+
+const FIXTURE_SCHEDULE_KEY = "studentSchedule:current";
+
+type AcceptState = {
+  open: boolean;
+  picks: SchedulePick[];
+  totalCredits: number;
+  busy: boolean;
+};
 
 export default function ChatClient({
   initialMessages,
@@ -43,10 +62,11 @@ export default function ChatClient({
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accept, setAccept] = useState<AcceptState | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const seedFired = useRef(false);
 
-  // Auto-scroll to bottom whenever messages change
   useEffect(() => {
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
@@ -54,7 +74,6 @@ export default function ChatClient({
     });
   }, [messages]);
 
-  // Fire the seed prompt from ?prompt= exactly once
   useEffect(() => {
     if (seedFired.current) return;
     if (seedPrompt && messages.length === 0) {
@@ -62,6 +81,12 @@ export default function ChatClient({
       void send(seedPrompt);
     }
   }, [seedPrompt]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   async function send(text: string) {
     const trimmed = text.trim();
@@ -79,7 +104,7 @@ export default function ChatClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: updated,
+          messages: updated.map(({ role, content }) => ({ role, content })),
           sessionId,
           profile,
         }),
@@ -90,11 +115,9 @@ export default function ChatClient({
         throw new Error(body.error || `Request failed (${res.status})`);
       }
 
-      // Extract session id from response header (new sessions)
       const newSessionId = res.headers.get("x-session-id");
       if (newSessionId && !sessionId) {
         setSessionId(newSessionId);
-        // Update the URL so refreshes keep the conversation
         const url = new URL(window.location.href);
         url.searchParams.set("session", newSessionId);
         url.searchParams.delete("prompt");
@@ -102,21 +125,22 @@ export default function ChatClient({
         window.history.replaceState({}, "", url.toString());
       }
 
-      // Stream the response
       const reader = res.body?.getReader();
       if (!reader) throw new Error("No response stream");
       const decoder = new TextDecoder();
-      let assistantText = "";
+      let raw = "";
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
-        assistantText += decoder.decode(value, { stream: true });
+        raw += decoder.decode(value, { stream: true });
+        const split = splitSchedulePayload(raw);
         setMessages((prev) => {
           const next = [...prev];
           next[next.length - 1] = {
             role: "assistant",
-            content: assistantText,
+            content: split.text,
+            metadata: split.metadata,
           };
           return next;
         });
@@ -124,11 +148,47 @@ export default function ChatClient({
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       setError(message);
-      setMessages((prev) => prev.slice(0, -1)); // drop the empty assistant bubble
+      setMessages((prev) => prev.slice(0, -1));
     } finally {
       setStreaming(false);
-      // Refresh server data so sidebar / history pick up the new session
       router.refresh();
+    }
+  }
+
+  function openAccept(picks: SchedulePick[], totalCredits: number) {
+    setAccept({ open: true, picks, totalCredits, busy: false });
+  }
+
+  async function confirmAccept() {
+    if (!accept) return;
+    setAccept({ ...accept, busy: true });
+    try {
+      const res = await fetch("/api/schedule/accept", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          schedule_ids: accept.picks.map((p) => p.schedule_id),
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Could not save");
+
+      if (body.fixture && typeof window !== "undefined") {
+        window.localStorage.setItem(
+          FIXTURE_SCHEDULE_KEY,
+          JSON.stringify({
+            picks: accept.picks,
+            totalCredits: accept.totalCredits,
+            acceptedAt: new Date().toISOString(),
+          })
+        );
+      }
+      setAccept(null);
+      setToast("Saved to My Schedule");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Save failed";
+      setAccept(accept ? { ...accept, busy: false } : null);
+      setError(message);
     }
   }
 
@@ -136,18 +196,11 @@ export default function ChatClient({
 
   return (
     <div className="flex flex-col h-[calc(100vh-72px)]">
-      {/* Messages area */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 md:px-8 py-8"
-      >
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-8 py-8">
         {empty ? (
           <div className="max-w-3xl mx-auto text-center pt-10">
             <div className="inline-flex w-14 h-14 rounded-2xl bg-surface-variant items-center justify-center mb-6">
-              <span
-                className="material-symbols-outlined text-primary"
-                style={{ fontSize: "28px" }}
-              >
+              <span className="material-symbols-outlined text-primary" style={{ fontSize: "28px" }}>
                 auto_awesome
               </span>
             </div>
@@ -166,7 +219,11 @@ export default function ChatClient({
               </p>
             )}
             {messages.map((m, i) => (
-              <MessageBubble key={i} msg={m} />
+              <MessageBubble
+                key={i}
+                msg={m}
+                onAccept={(picks, total) => openAccept(picks, total)}
+              />
             ))}
             {streaming && messages[messages.length - 1]?.content === "" && (
               <TypingIndicator />
@@ -175,7 +232,6 @@ export default function ChatClient({
         )}
       </div>
 
-      {/* Quick replies */}
       {!empty && !streaming && (
         <div className="px-4 md:px-8 pb-3">
           <div className="max-w-3xl mx-auto flex flex-wrap gap-2 justify-center">
@@ -186,12 +242,19 @@ export default function ChatClient({
         </div>
       )}
 
-      {/* Input */}
       <div className="px-4 md:px-8 pb-6 pt-2">
         <div className="max-w-3xl mx-auto">
           {error && (
             <div className="bg-error-container/40 text-on-error-container px-4 py-3 rounded-lg text-body-sm mb-3">
               {error}
+            </div>
+          )}
+          {toast && (
+            <div className="bg-green-100 text-green-800 px-4 py-3 rounded-lg text-body-sm mb-3 flex items-center gap-2">
+              <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+                check_circle
+              </span>
+              {toast}
             </div>
           )}
           <form
@@ -218,21 +281,52 @@ export default function ChatClient({
               aria-label="Send"
               className="w-10 h-10 rounded-full bg-cta-gradient flex items-center justify-center text-white hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: "20px" }}
-              >
+              <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
                 arrow_upward
               </span>
             </button>
           </form>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!accept?.open}
+        title="Save this schedule?"
+        body={
+          accept ? (
+            <div className="flex flex-col gap-2">
+              <p>
+                {accept.picks.length} courses, {accept.totalCredits} credits.
+                Replaces any schedule you&apos;ve previously accepted for the
+                current semester.
+              </p>
+              <ul className="text-body-sm text-on-surface-variant pl-4 list-disc">
+                {accept.picks.map((p) => (
+                  <li key={p.schedule_id}>
+                    {p.course_name} — {p.day} {p.start_time}–{p.end_time}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null
+        }
+        confirmLabel="Save schedule"
+        cancelLabel="Not yet"
+        busy={accept?.busy ?? false}
+        onConfirm={confirmAccept}
+        onCancel={() => accept && !accept.busy && setAccept(null)}
+      />
     </div>
   );
 }
 
-function MessageBubble({ msg }: { msg: Msg }) {
+function MessageBubble({
+  msg,
+  onAccept,
+}: {
+  msg: Msg;
+  onAccept: (picks: SchedulePick[], totalCredits: number) => void;
+}) {
   const isUser = msg.role === "user";
 
   if (isUser) {
@@ -247,13 +341,13 @@ function MessageBubble({ msg }: { msg: Msg }) {
     );
   }
 
+  const schedule =
+    msg.metadata?.kind === "schedule" ? msg.metadata : null;
+
   return (
     <div className="msg-in flex gap-3 items-start">
       <div className="shrink-0 w-8 h-8 rounded-full bg-cta-gradient flex items-center justify-center">
-        <span
-          className="material-symbols-outlined text-white"
-          style={{ fontSize: "16px" }}
-        >
+        <span className="material-symbols-outlined text-white" style={{ fontSize: "16px" }}>
           auto_awesome
         </span>
       </div>
@@ -265,6 +359,21 @@ function MessageBubble({ msg }: { msg: Msg }) {
           <p className="font-body text-body-md text-on-surface whitespace-pre-wrap leading-relaxed">
             {msg.content || " "}
           </p>
+          {schedule && schedule.picks.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-outline-variant flex items-center justify-between gap-3 flex-wrap">
+              <p className="font-body text-body-sm text-on-surface-variant">
+                {schedule.picks.length} courses · {schedule.total_credits}{" "}
+                credits
+              </p>
+              <button
+                type="button"
+                onClick={() => onAccept(schedule.picks, schedule.total_credits)}
+                className="btn-primary text-body-sm py-2 px-4"
+              >
+                Accept this schedule
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -275,10 +384,7 @@ function TypingIndicator() {
   return (
     <div className="flex gap-3 items-start msg-in">
       <div className="shrink-0 w-8 h-8 rounded-full bg-cta-gradient flex items-center justify-center">
-        <span
-          className="material-symbols-outlined text-white"
-          style={{ fontSize: "16px" }}
-        >
+        <span className="material-symbols-outlined text-white" style={{ fontSize: "16px" }}>
           auto_awesome
         </span>
       </div>

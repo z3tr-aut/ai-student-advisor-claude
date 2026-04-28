@@ -39,8 +39,10 @@ export async function updateSession(request: NextRequest) {
   const isProtected =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/chat") ||
+    pathname.startsWith("/schedule") ||
+    pathname.startsWith("/semester") ||
     pathname.startsWith("/profile") ||
-    pathname.startsWith("/recommendations") ||
+    pathname.startsWith("/tips") ||
     pathname.startsWith("/history");
 
   const isAuthRoute =

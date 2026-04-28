@@ -175,6 +175,7 @@ function serializeFixtureScheduleResult(
     },
     total_credits: result.totalCredits,
     picks: result.picks.map((p) => ({
+      schedule_id: p.section.id,
       course_id: p.course.id,
       course_name: p.course.name,
       credits: p.course.credits,

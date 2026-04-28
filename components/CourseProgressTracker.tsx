@@ -33,7 +33,7 @@ const STATUS_BADGE: Record<string, string> = {
   withdrawn: "bg-gray-100 text-gray-600 border-gray-200",
 };
 
-export default function CoursesClient({
+export default function CourseProgressTracker({
   stdId,
   courses,
   history,
@@ -84,7 +84,6 @@ export default function CoursesClient({
   async function save(courseId: string) {
     const ov = getOverride(courseId);
     if (!ov.status) {
-      // Delete record
       const supabase = createClient();
       setSaving((s) => new Set(s).add(courseId));
       await supabase
@@ -140,7 +139,6 @@ export default function CoursesClient({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Stats bar */}
       <div className="flex gap-4 flex-wrap">
         {[
           { label: "Passed", count: statSummary.passed, color: "text-green-700" },
@@ -154,7 +152,6 @@ export default function CoursesClient({
         ))}
       </div>
 
-      {/* Filters */}
       <div className="flex gap-3 flex-wrap items-center">
         <input
           type="search"
@@ -178,7 +175,6 @@ export default function CoursesClient({
         ))}
       </div>
 
-      {/* Course table */}
       <div className="flex flex-col gap-2">
         {filtered.length === 0 && (
           <p className="font-body text-body-md text-on-surface-variant py-8 text-center">
@@ -208,7 +204,6 @@ export default function CoursesClient({
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Status badge / selector */}
                 <select
                   value={ov.status}
                   onChange={(e) => updateOverride(c.course_id, { status: e.target.value })}
@@ -223,7 +218,6 @@ export default function CoursesClient({
                   ))}
                 </select>
 
-                {/* Grade (only if passed/failed) */}
                 {(ov.status === "passed" || ov.status === "failed") && (
                   <input
                     type="number"
@@ -236,7 +230,6 @@ export default function CoursesClient({
                   />
                 )}
 
-                {/* Semester selector */}
                 {semesters.length > 0 && ov.status && (
                   <select
                     value={ov.semesterId}
