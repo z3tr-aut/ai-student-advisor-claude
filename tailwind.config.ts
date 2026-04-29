@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+// @ts-expect-error — package ships no types but exports a Tailwind plugin function
+import rtl from "tailwindcss-rtl";
 
 const config: Config = {
   darkMode: "class",
@@ -126,7 +128,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [rtl],
 };
 
 export default config;

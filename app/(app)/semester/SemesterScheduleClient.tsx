@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import type { CatalogRow } from "@/lib/advisor/fixtures";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localizedDay } from "@/lib/i18n/dict";
 
 const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"] as const;
 type DayFilter = "all" | (typeof DAY_ORDER)[number];
@@ -13,6 +15,7 @@ function fmtTime(minutes: number): string {
 }
 
 export default function SemesterScheduleClient({ rows }: { rows: CatalogRow[] }) {
+  const { t, lang } = useI18n();
   const [search, setSearch] = useState("");
   const [dayFilter, setDayFilter] = useState<DayFilter>("all");
 
@@ -45,15 +48,15 @@ export default function SemesterScheduleClient({ rows }: { rows: CatalogRow[] })
   return (
     <div className="flex flex-col gap-6">
       <div className="flex gap-4 flex-wrap">
-        <Stat label="Sections" value={rows.length} />
-        <Stat label="Courses" value={distinctCourses} />
-        <Stat label="Showing" value={filtered.length} dimmed />
+        <Stat label={t("semester.stat.sections")} value={rows.length} />
+        <Stat label={t("semester.stat.courses")} value={distinctCourses} />
+        <Stat label={t("semester.stat.showing")} value={filtered.length} dimmed />
       </div>
 
       <div className="flex gap-3 flex-wrap items-center">
         <input
           type="search"
-          placeholder="Search by course, instructor, or room…"
+          placeholder={t("semester.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="input flex-1 min-w-64"
@@ -63,10 +66,10 @@ export default function SemesterScheduleClient({ rows }: { rows: CatalogRow[] })
           onChange={(e) => setDayFilter(e.target.value as DayFilter)}
           className="text-sm border border-outline-variant rounded-lg px-3 py-2 bg-surface"
         >
-          <option value="all">All days</option>
+          <option value="all">{t("semester.allDays")}</option>
           {DAY_ORDER.map((d) => (
             <option key={d} value={d}>
-              {d}
+              {localizedDay(d, lang)}
             </option>
           ))}
         </select>
@@ -75,11 +78,11 @@ export default function SemesterScheduleClient({ rows }: { rows: CatalogRow[] })
       <div className="flex flex-col gap-2">
         {filtered.length === 0 && (
           <p className="font-body text-body-md text-on-surface-variant py-8 text-center">
-            No sections match the filter.
+            {t("semester.noResults")}
           </p>
         )}
         {filtered.map((r) => (
-          <SectionCard key={r.sectionId} row={r} />
+          <SectionCard key={r.sectionId} row={r} lang={lang} t={t} />
         ))}
       </div>
     </div>
@@ -111,33 +114,42 @@ function Stat({
   );
 }
 
-function SectionCard({ row }: { row: CatalogRow }) {
+function SectionCard({
+  row,
+  lang,
+  t,
+}: {
+  row: CatalogRow;
+  lang: string;
+  t: (key: string, params?: Record<string, string | number>) => string;
+}) {
   const seatsLeft = Math.max(0, row.capacity - row.enrolledCount);
   const fillPct =
     row.capacity > 0 ? Math.min(100, Math.round((row.enrolledCount / row.capacity) * 100)) : 0;
   const fillColor =
     fillPct >= 95 ? "bg-red-500" : fillPct >= 75 ? "bg-amber-500" : "bg-green-500";
+  const displayName = lang === "ar" && row.courseNameAr ? row.courseNameAr : row.courseName;
 
   return (
     <div className="bg-surface-container-low rounded-2xl p-4 flex flex-col md:flex-row md:items-center gap-4">
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
           <p className="font-headline text-title-md font-bold truncate">
-            {row.courseName}
+            {displayName}
           </p>
           <span className="font-body text-body-sm text-on-surface-variant">
             #{row.sectionId} · {row.creditHours} cr
           </span>
         </div>
         <p className="font-body text-body-sm text-on-surface-variant mt-1">
-          {row.instructorName ?? "Instructor TBA"} ·{" "}
-          {row.roomName ?? "Room TBA"}
+          {row.instructorName ?? t("myschedule.instructorTBA")} ·{" "}
+          {row.roomName ?? t("common.tba")}
         </p>
       </div>
 
       <div className="flex items-center gap-4 shrink-0">
         <div className="text-right">
-          <p className="font-headline text-title-sm font-semibold">{row.day}</p>
+          <p className="font-headline text-title-sm font-semibold">{localizedDay(row.day, lang as "en" | "ar")}</p>
           <p className="font-body text-body-sm text-on-surface-variant">
             {fmtTime(row.startMinutes)}–{fmtTime(row.endMinutes)}
           </p>
@@ -146,7 +158,7 @@ function SectionCard({ row }: { row: CatalogRow }) {
           <p className="font-body text-body-xs text-on-surface-variant text-right mb-1">
             {row.enrolledCount}/{row.capacity}{" "}
             <span className="text-on-surface-variant/60">
-              · {seatsLeft} left
+              · {t("semester.seatsLeft", { count: seatsLeft })}
             </span>
           </p>
           <div className="h-2 rounded-full bg-surface-container overflow-hidden">

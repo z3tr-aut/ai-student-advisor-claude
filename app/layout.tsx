@@ -1,19 +1,35 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { resolveServerLang } from "@/lib/i18n/serverLang";
+import { I18nProvider } from "@/lib/i18n/I18nProvider";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "AI Student Advisor",
+  title: "Smart Advisor",
   description:
     "Your sophisticated AI guide for majors, careers, and universities.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const lang = await resolveServerLang();
+  const dir = lang === "ar" ? "rtl" : "ltr";
+
+  // Tell the I18nProvider whether to also persist to profiles.lang on toggle.
+  let authed = false;
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    authed = !!user;
+  } catch {
+    authed = false;
+  }
+
   return (
-    <html lang="en" className="dark">
+    <html lang={lang} dir={dir} className="dark">
       <head>
         {/* Design system typefaces — Manrope (headlines) + Inter (body) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -32,7 +48,9 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-surface text-on-surface font-body min-h-screen">
-        {children}
+        <I18nProvider initialLang={lang} authed={authed}>
+          {children}
+        </I18nProvider>
       </body>
     </html>
   );

@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
-const NAV_ITEMS = [
-  { href: "/chat", label: "Chat", icon: "chat_bubble" },
-  { href: "/schedule", label: "My Schedule", icon: "event_available" },
-  { href: "/semester", label: "Semester Schedule", icon: "menu_book" },
-  { href: "/profile", label: "Profile", icon: "person" },
-  { href: "/tips", label: "Study Tips", icon: "auto_awesome" },
-  { href: "/history", label: "History", icon: "history" },
+const NAV_ITEMS: { href: string; key: string; icon: string }[] = [
+  { href: "/chat", key: "sidebar.chat", icon: "chat_bubble" },
+  { href: "/schedule", key: "sidebar.mySchedule", icon: "event_available" },
+  { href: "/semester", key: "sidebar.semester", icon: "menu_book" },
+  { href: "/profile", key: "sidebar.profile", icon: "person" },
+  { href: "/tips", key: "sidebar.tips", icon: "auto_awesome" },
+  { href: "/history", key: "sidebar.history", icon: "history" },
 ];
 
 export default function Sidebar({
@@ -24,6 +25,7 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useI18n();
 
   async function handleLogout() {
     const supabase = createClient();
@@ -83,7 +85,7 @@ export default function Sidebar({
                 className={`nav-link ${active ? "nav-link-active" : ""}`}
               >
                 <span className="material-symbols-outlined">{item.icon}</span>
-                <span>{item.label}</span>
+                <span>{t(item.key)}</span>
               </Link>
             );
           })}
@@ -96,7 +98,7 @@ export default function Sidebar({
             className="btn-primary w-full flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-base">add</span>
-            New Conversation
+            {t("sidebar.newConversation")}
           </Link>
         </div>
       </div>
@@ -108,7 +110,7 @@ export default function Sidebar({
           className="text-on-surface-variant hover:text-on-surface flex items-center gap-3 py-2 transition-all font-body text-body-sm font-semibold text-left w-full"
         >
           <span className="material-symbols-outlined">logout</span>
-          <span>Sign Out</span>
+          <span>{t("sidebar.signOut")}</span>
         </button>
       </div>
     </aside>

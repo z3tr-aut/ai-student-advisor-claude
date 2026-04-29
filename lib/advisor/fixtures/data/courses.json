@@ -6,7 +6,8 @@
     "course_type": "Lecture",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "البرمجة 1"
   },
   {
     "course_id": 2,
@@ -15,7 +16,8 @@
     "course_type": "Lecture",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": 1
+    "prereq_id": 1,
+    "course_name_ar": "البرمجة 2"
   },
   {
     "course_id": 3,
@@ -24,7 +26,8 @@
     "course_type": "Lecture",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "الرياضيات المتقطعة"
   },
   {
     "course_id": 4,
@@ -33,7 +36,8 @@
     "course_type": "Lecture",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "مقدمة في الأمن السيبراني"
   },
   {
     "course_id": 5,
@@ -42,7 +46,8 @@
     "course_type": "Lecture",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": 2
+    "prereq_id": 2,
+    "course_name_ar": "هياكل البيانات"
   },
   {
     "course_id": 6,
@@ -51,7 +56,8 @@
     "course_type": "Lecture",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "تنظيم الحاسوب"
   },
   {
     "course_id": 7,
@@ -60,7 +66,8 @@
     "course_type": "Lecture",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "أساسيات الشبكات"
   },
   {
     "course_id": 8,
@@ -69,7 +76,8 @@
     "course_type": "Lecture",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": 5
+    "prereq_id": 5,
+    "course_name_ar": "أنظمة التشغيل"
   },
   {
     "course_id": 9,
@@ -78,7 +86,8 @@
     "course_type": "Lecture",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": 7
+    "prereq_id": 7,
+    "course_name_ar": "أمن الشبكات"
   },
   {
     "course_id": 10,
@@ -87,7 +96,8 @@
     "course_type": "Lecture",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": 7
+    "prereq_id": 7,
+    "course_name_ar": "التشفير"
   },
   {
     "course_id": 11,
@@ -96,7 +106,8 @@
     "course_type": "Lab",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": 9
+    "prereq_id": 9,
+    "course_name_ar": "الاختراق الأخلاقي"
   },
   {
     "course_id": 12,
@@ -105,7 +116,8 @@
     "course_type": "Lecture",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": 2
+    "prereq_id": 2,
+    "course_name_ar": "تطوير البرمجيات الآمن"
   },
   {
     "course_id": 13,
@@ -114,7 +126,8 @@
     "course_type": "Lab",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": 9
+    "prereq_id": 9,
+    "course_name_ar": "التحقيق الجنائي الرقمي"
   },
   {
     "course_id": 14,
@@ -123,7 +136,8 @@
     "course_type": "Lab",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": 10
+    "prereq_id": 10,
+    "course_name_ar": "تحليل البرمجيات الخبيثة"
   },
   {
     "course_id": 15,
@@ -132,7 +146,8 @@
     "course_type": "Lab",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": 11
+    "prereq_id": 11,
+    "course_name_ar": "اختبار الاختراق"
   },
   {
     "course_id": 16,
@@ -141,7 +156,8 @@
     "course_type": "Lecture",
     "major_id": 3,
     "major_name": "CY",
-    "prereq_id": 12
+    "prereq_id": 12,
+    "course_name_ar": "مشروع الأمن السيبراني"
   },
   {
     "course_id": 17,
@@ -150,7 +166,8 @@
     "course_type": "Lecture",
     "major_id": 2,
     "major_name": "SE",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "البرمجة 1"
   },
   {
     "course_id": 18,
@@ -159,7 +176,8 @@
     "course_type": "Lecture",
     "major_id": 2,
     "major_name": "SE",
-    "prereq_id": 17
+    "prereq_id": 17,
+    "course_name_ar": "البرمجة 2"
   },
   {
     "course_id": 19,
@@ -168,7 +186,8 @@
     "course_type": "Lecture",
     "major_id": 2,
     "major_name": "SE",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "متطلبات البرمجيات"
   },
   {
     "course_id": 20,
@@ -177,7 +196,8 @@
     "course_type": "Lecture",
     "major_id": 2,
     "major_name": "SE",
-    "prereq_id": 19
+    "prereq_id": 19,
+    "course_name_ar": "تصميم البرمجيات"
   },
   {
     "course_id": 21,
@@ -186,7 +206,8 @@
     "course_type": "Lecture",
     "major_id": 2,
     "major_name": "SE",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "أنظمة قواعد البيانات"
   },
   {
     "course_id": 22,
@@ -195,7 +216,8 @@
     "course_type": "Lecture",
     "major_id": 2,
     "major_name": "SE",
-    "prereq_id": 20
+    "prereq_id": 20,
+    "course_name_ar": "اختبار البرمجيات"
   },
   {
     "course_id": 23,
@@ -204,7 +226,8 @@
     "course_type": "Lecture",
     "major_id": 2,
     "major_name": "SE",
-    "prereq_id": 18
+    "prereq_id": 18,
+    "course_name_ar": "تطوير الويب"
   },
   {
     "course_id": 24,
@@ -213,7 +236,8 @@
     "course_type": "Lecture",
     "major_id": 2,
     "major_name": "SE",
-    "prereq_id": 23
+    "prereq_id": 23,
+    "course_name_ar": "تطوير تطبيقات الهاتف"
   },
   {
     "course_id": 25,
@@ -222,7 +246,8 @@
     "course_type": "Lecture",
     "major_id": 2,
     "major_name": "SE",
-    "prereq_id": 20
+    "prereq_id": 20,
+    "course_name_ar": "معمارية البرمجيات"
   },
   {
     "course_id": 26,
@@ -231,7 +256,8 @@
     "course_type": "Lecture",
     "major_id": 2,
     "major_name": "SE",
-    "prereq_id": 25
+    "prereq_id": 25,
+    "course_name_ar": "ديف أوبس"
   },
   {
     "course_id": 27,
@@ -240,7 +266,8 @@
     "course_type": "Lecture",
     "major_id": 2,
     "major_name": "SE",
-    "prereq_id": 20
+    "prereq_id": 20,
+    "course_name_ar": "إدارة مشاريع البرمجيات"
   },
   {
     "course_id": 28,
@@ -249,7 +276,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "البرمجة 1"
   },
   {
     "course_id": 29,
@@ -258,7 +286,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": 28
+    "prereq_id": 28,
+    "course_name_ar": "البرمجة 2"
   },
   {
     "course_id": 30,
@@ -267,7 +296,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "الجبر الخطي"
   },
   {
     "course_id": 31,
@@ -276,7 +306,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "الاحتمالات والإحصاء"
   },
   {
     "course_id": 32,
@@ -285,7 +316,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": 29
+    "prereq_id": 29,
+    "course_name_ar": "التنقيب في البيانات"
   },
   {
     "course_id": 33,
@@ -294,7 +326,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": 32
+    "prereq_id": 32,
+    "course_name_ar": "تعلم الآلة"
   },
   {
     "course_id": 34,
@@ -303,7 +336,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": 33
+    "prereq_id": 33,
+    "course_name_ar": "الرؤية الحاسوبية"
   },
   {
     "course_id": 35,
@@ -312,7 +346,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": 33
+    "prereq_id": 33,
+    "course_name_ar": "معالجة اللغة الطبيعية"
   },
   {
     "course_id": 36,
@@ -321,7 +356,8 @@
     "course_type": "Lab",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": 33
+    "prereq_id": 33,
+    "course_name_ar": "التعلم العميق"
   },
   {
     "course_id": 37,
@@ -330,7 +366,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": 33
+    "prereq_id": 33,
+    "course_name_ar": "التعلم المعزز"
   },
   {
     "course_id": 38,
@@ -339,7 +376,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "أخلاقيات الذكاء الاصطناعي"
   },
   {
     "course_id": 39,
@@ -348,7 +386,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "التفاضل والتكامل للذكاء الاصطناعي"
   },
   {
     "course_id": 40,
@@ -357,7 +396,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "مناهج البحث"
   },
   {
     "course_id": 41,
@@ -366,7 +406,8 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "الكتابة التقنية"
   },
   {
     "course_id": 42,
@@ -375,6 +416,7 @@
     "course_type": "Lecture",
     "major_id": 1,
     "major_name": "AI",
-    "prereq_id": null
+    "prereq_id": null,
+    "course_name_ar": "مشروع تخرج الذكاء الاصطناعي"
   }
 ]

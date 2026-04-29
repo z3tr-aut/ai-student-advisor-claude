@@ -23,7 +23,9 @@ export type Section = {
   startMinutes: number;
   endMinutes: number;
   roomId?: string;
+  roomName?: string;
   instructorId?: string;
+  instructorName?: string;
   capacity?: number;
 };
 
@@ -92,6 +94,7 @@ function toPrereqIds(raw: number | string | null | undefined): string[] {
 type RawCourse = {
   course_id: number;
   course_name: string;
+  course_name_ar?: string;
   credit_hours: number;
   course_type: string | null;
   major_id: number;
@@ -163,6 +166,7 @@ export function loadFixtureCourses(majorId?: number | string): Course[] {
     .map((c) => ({
       id: String(c.course_id),
       name: c.course_name,
+      nameAr: c.course_name_ar,
       credits: c.credit_hours,
       type: toCourseType(c.course_type),
       prereqIds: toPrereqIds(c.prereq_id),
@@ -178,10 +182,12 @@ export function loadFixtureSections(): Section[] {
     startMinutes: toMinutes(s.start_time),
     endMinutes: toMinutes(s.end_time),
     roomId: s.room_id !== null && s.room_id !== undefined ? String(s.room_id) : undefined,
+    roomName: s.room_name ?? undefined,
     instructorId:
       s.instructor_id !== null && s.instructor_id !== undefined
         ? String(s.instructor_id)
         : undefined,
+    instructorName: s.instructor_name ?? undefined,
     capacity: s.capacity,
   }));
 }
@@ -276,6 +282,7 @@ export type CatalogRow = {
   sectionId: string;
   courseId: string;
   courseName: string;
+  courseNameAr: string | null;
   creditHours: number;
   day: Day;
   startMinutes: number;
@@ -311,6 +318,7 @@ export function loadFixtureCatalogRows(): CatalogRow[] {
       sectionId,
       courseId: String(s.course_id),
       courseName: s.course_name ?? course?.course_name ?? `Course ${s.course_id}`,
+      courseNameAr: course?.course_name_ar ?? null,
       creditHours: s.credit_hours ?? course?.credit_hours ?? 0,
       day: toDay(s.day),
       startMinutes: toMinutes(s.start_time),

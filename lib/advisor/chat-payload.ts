@@ -13,11 +13,14 @@ export type SchedulePick = {
   schedule_id: string;
   course_id: string;
   course_name: string;
+  course_name_ar?: string;
   credits: number;
   day: string;
   start_time: string;
   end_time: string;
   room_id?: string;
+  room_name?: string;
+  instructor_name?: string;
 };
 
 export type ScheduleMessageMetadata = {

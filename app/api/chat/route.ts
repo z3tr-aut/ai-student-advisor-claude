@@ -42,9 +42,12 @@ function formatAcademicRecord(p: StudentAcademicProfile): string {
   return lines.join("\n");
 }
 
-function buildSystemPrompt(profile: Profile | null, academic: StudentAcademicProfile | null): string {
+function buildSystemPrompt(profile: Profile | null, academic: StudentAcademicProfile | null, lang: string = "en"): string {
+  const langDirective = lang === "ar"
+    ? "The student's preferred language is Arabic. ALWAYS reply in Arabic, even if the student wrote in English. Use natural, friendly Arabic — not formal MSA. Course names may come in both Arabic and English; use the Arabic name when available."
+    : "The student's preferred language is English. ALWAYS reply in English, even if the student wrote in Arabic.";
   const parts: string[] = [
-    "You are an academic advisor chatting with a student at Aqaba University of Technology. Talk like a friendly tutor, not a formal report. Match the student's language (Arabic or English).",
+    `You are an academic advisor chatting with a student at Aqaba University of Technology. Talk like a friendly tutor, not a formal report. ${langDirective}`,
     "Tone: casual, short, direct. Plain prose. Treat it like texting a friend who happens to be smart — answer the question and stop.",
     "Formatting rules — strictly follow:",
     "  - The chat renders as plain text. Do NOT use markdown: no asterisks, no **bold**, no #headings, no backticks, no `*` or `-` bullet lines for emphasis. The user literally sees the asterisks.",
@@ -99,14 +102,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: rateCheck?.message ?? "Rate limit exceeded." }, { status: 429 });
   }
 
-  let body: { messages: IncomingMsg[]; sessionId: string | null; profile: Profile | null };
+  let body: { messages: IncomingMsg[]; sessionId: string | null; profile: Profile | null; lang?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { messages, profile } = body;
+  const { messages, profile, lang = "en" } = body;
   let { sessionId } = body;
 
   if (!Array.isArray(messages) || messages.length === 0) {
@@ -151,7 +154,7 @@ export async function POST(req: Request) {
   const academic = fixtureStdId !== undefined ? buildStudentProfile(fixtureStdId) : null;
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const systemPrompt = buildSystemPrompt(profile, academic);
+  const systemPrompt = buildSystemPrompt(profile, academic, lang);
   const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
   const geminiModel = genAI.getGenerativeModel({

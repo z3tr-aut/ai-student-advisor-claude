@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MyScheduleClient from "./MyScheduleClient";
 import type { SchedulePick } from "@/lib/advisor/chat-payload";
+import { resolveServerLang } from "@/lib/i18n/serverLang";
+import { translate } from "@/lib/i18n/dict";
 
 type Row = SchedulePick & { instructor_name?: string | null; room_name?: string | null };
 
@@ -12,6 +14,8 @@ function fmt(time: string | null | undefined): string {
 
 export default async function MySchedulePage() {
   const supabase = createClient();
+  const lang = await resolveServerLang();
+  const t = (key: string, params?: Record<string, string | number>) => translate(lang, key, params);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -66,8 +70,8 @@ export default async function MySchedulePage() {
           start_time: fmt(sched?.time?.s_time),
           end_time: fmt(sched?.time?.e_time),
           room_id: sched?.room?.room_id,
-          room_name: sched?.room?.building ?? null,
-          instructor_name: sched?.instructor?.instructor_name ?? null,
+          room_name: sched?.room?.building ?? undefined,
+          instructor_name: sched?.instructor?.instructor_name ?? undefined,
         };
       });
       totalCredits = rows.reduce((sum, r) => sum + (r.credits ?? 0), 0);
@@ -78,14 +82,13 @@ export default async function MySchedulePage() {
     <div className="max-w-4xl mx-auto p-6 md:p-10">
       <div className="mb-8">
         <p className="text-label-md font-semibold uppercase tracking-wider text-primary mb-2">
-          ACCEPTED FOR THIS SEMESTER
+          {t("myschedule.eyebrow")}
         </p>
         <h1 className="font-headline text-display-sm text-on-surface font-bold mb-2">
-          My Schedule
+          {t("myschedule.heading")}
         </h1>
         <p className="font-body text-body-lg text-on-surface-variant">
-          Your accepted picks for the current semester. Edit or discard with the
-          advisor.
+          {t("myschedule.subheading")}
         </p>
       </div>
 

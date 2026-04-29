@@ -2,21 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 const FIXTURE_SCHEDULE_KEY = "studentSchedule:current";
 
 export type AcceptedCourse = {
   courseId: string;
   courseName: string;
+  courseNameAr?: string | null;
   credits: number;
 };
-
-const GENERIC_TIPS = [
-  "Skim the syllabus the night before each lecture and write down one question.",
-  "Re-do every solved example in the textbook from scratch on a blank page.",
-  "Form a 2–3 person study group; teach the chapter aloud to each other weekly.",
-  "Schedule one 25-minute review session within 24 hours of each lecture.",
-];
 
 export default function StudyTipsClient({
   mode,
@@ -25,6 +20,7 @@ export default function StudyTipsClient({
   mode: "fixture" | "supabase";
   initialCourses: AcceptedCourse[];
 }) {
+  const { t, lang } = useI18n();
   const [courses, setCourses] = useState<AcceptedCourse[]>(initialCourses);
   const [hydrated, setHydrated] = useState(mode === "supabase");
 
@@ -59,10 +55,17 @@ export default function StudyTipsClient({
     setHydrated(true);
   }, [mode]);
 
+  const GENERIC_TIPS = [
+    t("tips.generic.0"),
+    t("tips.generic.1"),
+    t("tips.generic.2"),
+    t("tips.generic.3"),
+  ];
+
   if (!hydrated) {
     return (
       <p className="font-body text-body-md text-on-surface-variant text-center py-12">
-        Loading…
+        {t("common.loading")}
       </p>
     );
   }
@@ -76,17 +79,16 @@ export default function StudyTipsClient({
           </span>
         </div>
         <h3 className="font-headline text-headline-sm text-on-surface mb-3">
-          No accepted schedule yet
+          {t("tips.empty.title")}
         </h3>
         <p className="font-body text-body-md text-on-surface-variant max-w-md mx-auto mb-6">
-          Build a schedule with the advisor and accept it. Tips will appear here
-          for each course you&apos;re taking.
+          {t("tips.empty.body")}
         </p>
         <Link href="/chat" className="btn-primary inline-flex items-center gap-2">
           <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
             chat_bubble
           </span>
-          Open chat
+          {t("common.openChat")}
         </Link>
       </div>
     );
@@ -94,35 +96,37 @@ export default function StudyTipsClient({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {courses.map((c, idx) => (
-        <article
-          key={c.courseId}
-          className="bg-surface-container-low rounded-2xl p-5 flex flex-col gap-3"
-        >
-          <header>
-            <p className="text-label-md font-semibold uppercase tracking-wider text-primary">
-              {c.courseId} · {c.credits} cr
-            </p>
-            <h3 className="font-headline text-headline-sm text-on-surface mt-1">
-              {c.courseName}
-            </h3>
-          </header>
-          <ul className="font-body text-body-sm text-on-surface-variant flex flex-col gap-2 pl-4 list-disc">
-            {/* Rotate the generic tip set so each card gets a different lead. */}
-            {[0, 1, 2].map((i) => (
-              <li key={i}>{GENERIC_TIPS[(idx + i) % GENERIC_TIPS.length]}</li>
-            ))}
-          </ul>
-          <Link
-            href={`/chat?prompt=${encodeURIComponent(
-              `Give me focused study tips for ${c.courseName}.`
-            )}`}
-            className="btn-tertiary text-body-sm self-start mt-1"
+      {courses.map((c, idx) => {
+        const displayName = lang === "ar" && c.courseNameAr ? c.courseNameAr : c.courseName;
+        return (
+          <article
+            key={c.courseId}
+            className="bg-surface-container-low rounded-2xl p-5 flex flex-col gap-3"
           >
-            Ask the advisor for more →
-          </Link>
-        </article>
-      ))}
+            <header>
+              <p className="text-label-md font-semibold uppercase tracking-wider text-primary">
+                {c.courseId} · {c.credits} {t("tips.creditSuffix")}
+              </p>
+              <h3 className="font-headline text-headline-sm text-on-surface mt-1">
+                {displayName}
+              </h3>
+            </header>
+            <ul className="font-body text-body-sm text-on-surface-variant flex flex-col gap-2 pl-4 list-disc">
+              {[0, 1, 2].map((i) => (
+                <li key={i}>{GENERIC_TIPS[(idx + i) % GENERIC_TIPS.length]}</li>
+              ))}
+            </ul>
+            <Link
+              href={`/chat?prompt=${encodeURIComponent(
+                t("tips.askPromptTemplate", { course: displayName })
+              )}`}
+              className="btn-tertiary text-body-sm self-start mt-1"
+            >
+              {t("tips.askMore")}
+            </Link>
+          </article>
+        );
+      })}
     </div>
   );
 }

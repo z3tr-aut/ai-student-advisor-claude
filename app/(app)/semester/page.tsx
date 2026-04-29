@@ -7,6 +7,8 @@ import {
   type Day,
 } from "@/lib/advisor/fixtures";
 import SemesterScheduleClient from "./SemesterScheduleClient";
+import { resolveServerLang } from "@/lib/i18n/serverLang";
+import { translate } from "@/lib/i18n/dict";
 
 const DAY_BY_INT: Day[] = [
   "Sunday",
@@ -24,6 +26,8 @@ function timeToMinutes(t: string | null | undefined): number {
 
 export default async function SemesterSchedulePage() {
   const supabase = createClient();
+  const lang = await resolveServerLang();
+  const t = (key: string, params?: Record<string, string | number>) => translate(lang, key, params);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -52,7 +56,7 @@ export default async function SemesterSchedulePage() {
           .from("schedule")
           .select(
             `schedule_id,
-             course:course_id(course_id, course_na, credit_hours),
+             course:course_id(course_id, course_na, course_na_ar, credit_hours),
              room:room_id(room_id, building, capacity),
              instructor:instructor_id(instructor_name),
              time:time_id(day, s_time, e_time)`
@@ -73,7 +77,7 @@ export default async function SemesterSchedulePage() {
 
       type Joined = {
         schedule_id: string;
-        course?: { course_id: string; course_na: string; credit_hours: number } | null;
+        course?: { course_id: string; course_na: string; course_na_ar?: string | null; credit_hours: number } | null;
         room?: { room_id: string; building: string | null; capacity: number | null } | null;
         instructor?: { instructor_name: string } | null;
         time?: { day: number; s_time: string; e_time: string } | null;
@@ -86,6 +90,7 @@ export default async function SemesterSchedulePage() {
           sectionId: s.schedule_id,
           courseId: s.course?.course_id ?? "",
           courseName: s.course?.course_na ?? "Course",
+          courseNameAr: s.course?.course_na_ar ?? null,
           creditHours: s.course?.credit_hours ?? 0,
           day,
           startMinutes: timeToMinutes(s.time?.s_time),
@@ -103,14 +108,15 @@ export default async function SemesterSchedulePage() {
     <div className="max-w-6xl mx-auto p-6 md:p-10">
       <div className="mb-8">
         <p className="text-label-md font-semibold uppercase tracking-wider text-primary mb-2">
-          {semesterName ? `${semesterName.toUpperCase()} OFFERINGS` : "OFFERINGS"}
+          {semesterName
+            ? t("semester.eyebrowOfferings", { semester: semesterName.toUpperCase() })
+            : t("semester.eyebrowDefault")}
         </p>
         <h1 className="font-headline text-display-sm text-on-surface font-bold mb-2">
-          Semester Schedule
+          {t("semester.heading")}
         </h1>
         <p className="font-body text-body-lg text-on-surface-variant">
-          Every class the university is offering this semester — room,
-          instructor, time, and how many students are already enrolled.
+          {t("semester.subheading")}
         </p>
       </div>
 
@@ -124,11 +130,10 @@ export default async function SemesterSchedulePage() {
             </span>
           </div>
           <h3 className="font-headline text-headline-sm text-on-surface mb-3">
-            No catalog available yet
+            {t("semester.empty.title")}
           </h3>
           <p className="font-body text-body-md text-on-surface-variant max-w-md mx-auto">
-            Sign in with a seeded test student to see the fixture catalog.
-            Production catalogs will be wired to Supabase in a follow-up.
+            {t("semester.empty.body")}
           </p>
         </div>
       )}

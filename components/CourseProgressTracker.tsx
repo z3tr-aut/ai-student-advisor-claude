@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type DBCourse = {
   course_id: string;
@@ -18,12 +19,12 @@ type HistoryRow = {
 };
 type Semester = { semester_id: string; name: string; status: string };
 
-const STATUS_OPTIONS = [
-  { value: "", label: "—" },
-  { value: "passed", label: "Passed" },
-  { value: "enrolled", label: "Enrolled" },
-  { value: "failed", label: "Failed" },
-  { value: "withdrawn", label: "Withdrawn" },
+const STATUS_OPTION_KEYS = [
+  { value: "", key: "tracker.status.empty" },
+  { value: "passed", key: "tracker.status.passed" },
+  { value: "enrolled", key: "tracker.status.enrolled" },
+  { value: "failed", key: "tracker.status.failed" },
+  { value: "withdrawn", key: "tracker.status.withdrawn" },
 ];
 
 const STATUS_BADGE: Record<string, string> = {
@@ -38,12 +39,17 @@ export default function CourseProgressTracker({
   courses,
   history,
   semesters,
+  readOnly = false,
 }: {
   stdId: string;
   courses: DBCourse[];
   history: HistoryRow[];
   semesters: Semester[];
+  readOnly?: boolean;
 }) {
+  const { t } = useI18n();
+  const STATUS_OPTIONS = STATUS_OPTION_KEYS.map((o) => ({ value: o.value, label: t(o.key) }));
+
   const historyMap = useMemo(() => {
     const m = new Map<string, HistoryRow>();
     for (const h of history) m.set(h.course_id, h);
@@ -141,13 +147,13 @@ export default function CourseProgressTracker({
     <div className="flex flex-col gap-6">
       <div className="flex gap-4 flex-wrap">
         {[
-          { label: "Passed", count: statSummary.passed, color: "text-green-700" },
-          { label: "Enrolled", count: statSummary.enrolled, color: "text-blue-700" },
-          { label: "Not started", count: statSummary.none, color: "text-on-surface-variant" },
-        ].map(({ label, count, color }) => (
-          <div key={label} className="bg-surface-container-low rounded-xl px-4 py-2 flex gap-2 items-center">
+          { labelKey: "tracker.filter.passed", count: statSummary.passed, color: "text-green-700" },
+          { labelKey: "tracker.filter.enrolled", count: statSummary.enrolled, color: "text-blue-700" },
+          { labelKey: "tracker.filter.none", count: statSummary.none, color: "text-on-surface-variant" },
+        ].map(({ labelKey, count, color }) => (
+          <div key={labelKey} className="bg-surface-container-low rounded-xl px-4 py-2 flex gap-2 items-center">
             <span className={`font-headline text-title-lg font-bold ${color}`}>{count}</span>
-            <span className="font-body text-body-sm text-on-surface-variant">{label}</span>
+            <span className="font-body text-body-sm text-on-surface-variant">{t(labelKey)}</span>
           </div>
         ))}
       </div>
@@ -155,12 +161,12 @@ export default function CourseProgressTracker({
       <div className="flex gap-3 flex-wrap items-center">
         <input
           type="search"
-          placeholder="Search course…"
+          placeholder={t("tracker.search")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="input flex-1 min-w-48"
         />
-        {["all", "passed", "enrolled", "none"].map((v) => (
+        {(["all", "passed", "enrolled", "none"] as const).map((v) => (
           <button
             key={v}
             onClick={() => setFilter(v)}
@@ -170,7 +176,7 @@ export default function CourseProgressTracker({
                 : "border-outline-variant text-on-surface-variant hover:border-primary"
             }`}
           >
-            {v === "none" ? "Not started" : v.charAt(0).toUpperCase() + v.slice(1)}
+            {t(v === "none" ? "tracker.filter.none" : v === "all" ? "tracker.filter.all" : `tracker.filter.${v}`)}
           </button>
         ))}
       </div>
@@ -178,7 +184,7 @@ export default function CourseProgressTracker({
       <div className="flex flex-col gap-2">
         {filtered.length === 0 && (
           <p className="font-body text-body-md text-on-surface-variant py-8 text-center">
-            No courses match the filter.
+            {t("tracker.empty")}
           </p>
         )}
         {filtered.map((c) => {
@@ -204,56 +210,74 @@ export default function CourseProgressTracker({
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <select
-                  value={ov.status}
-                  onChange={(e) => updateOverride(c.course_id, { status: e.target.value })}
-                  className={`text-xs font-semibold border rounded-full px-3 py-1 bg-transparent cursor-pointer transition-all ${
-                    badge ?? "border-outline-variant text-on-surface-variant"
-                  }`}
-                >
-                  {STATUS_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-
-                {(ov.status === "passed" || ov.status === "failed") && (
-                  <input
-                    type="number"
-                    placeholder="Grade"
-                    min={0}
-                    max={100}
-                    value={ov.grade}
-                    onChange={(e) => updateOverride(c.course_id, { grade: e.target.value })}
-                    className="w-20 text-xs border border-outline-variant rounded-lg px-2 py-1"
-                  />
-                )}
-
-                {semesters.length > 0 && ov.status && (
-                  <select
-                    value={ov.semesterId}
-                    onChange={(e) => updateOverride(c.course_id, { semesterId: e.target.value })}
-                    className="text-xs border border-outline-variant rounded-lg px-2 py-1 bg-transparent"
+                {readOnly ? (
+                  <span
+                    className={`text-xs font-semibold border rounded-full px-3 py-1 ${
+                      badge ?? "border-outline-variant text-on-surface-variant"
+                    }`}
                   >
-                    <option value="">Semester…</option>
-                    {semesters.map((s) => (
-                      <option key={s.semester_id} value={s.semester_id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                    {ov.status
+                      ? STATUS_OPTIONS.find((o) => o.value === ov.status)?.label ?? ov.status
+                      : "—"}
+                  </span>
+                ) : (
+                  <>
+                    <select
+                      value={ov.status}
+                      onChange={(e) => updateOverride(c.course_id, { status: e.target.value })}
+                      className={`text-xs font-semibold border rounded-full px-3 py-1 bg-transparent cursor-pointer transition-all ${
+                        badge ?? "border-outline-variant text-on-surface-variant"
+                      }`}
+                    >
+                      {STATUS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    {(ov.status === "passed" || ov.status === "failed") && (
+                      <input
+                        type="number"
+                        placeholder={t("tracker.grade")}
+                        min={0}
+                        max={100}
+                        value={ov.grade}
+                        onChange={(e) => updateOverride(c.course_id, { grade: e.target.value })}
+                        className="w-20 text-xs border border-outline-variant rounded-lg px-2 py-1"
+                      />
+                    )}
+
+                    {semesters.length > 0 && ov.status && (
+                      <select
+                        value={ov.semesterId}
+                        onChange={(e) => updateOverride(c.course_id, { semesterId: e.target.value })}
+                        className="text-xs border border-outline-variant rounded-lg px-2 py-1 bg-transparent"
+                      >
+                        <option value="">{t("tracker.semester")}</option>
+                        {semesters.map((s) => (
+                          <option key={s.semester_id} value={s.semester_id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    <button
+                      onClick={() => save(c.course_id)}
+                      disabled={isSaving}
+                      className="text-xs btn-secondary py-1 px-3"
+                    >
+                      {isSaving ? "…" : isSaved ? t("tracker.saved") : t("tracker.save")}
+                    </button>
+                  </>
                 )}
 
-                <button
-                  onClick={() => save(c.course_id)}
-                  disabled={isSaving}
-                  className="text-xs btn-secondary py-1 px-3"
-                >
-                  {isSaving ? "…" : isSaved ? "✓ Saved" : "Save"}
-                </button>
+                {(ov.status === "passed" || ov.status === "failed") && readOnly && ov.grade && (
+                  <span className="text-xs text-on-surface-variant">{t("tracker.gradePrefix")} {ov.grade}</span>
+                )}
               </div>
-              {errMsg && (
+              {errMsg && !readOnly && (
                 <p className="font-body text-body-xs text-red-600 w-full">{errMsg}</p>
               )}
             </div>

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import type { Lang } from "@/lib/i18n/types";
 
 type ProfileData = {
   full_name: string;
@@ -65,6 +67,7 @@ const COUNTRY_SUGGESTIONS = [
 
 export default function ProfileForm({ initial }: { initial: ProfileData }) {
   const router = useRouter();
+  const { t, lang, setLang } = useI18n();
   const [form, setForm] = useState<ProfileData>(initial);
   const [gpa, setGpa] = useState<string>(
     (initial.grades?.gpa as string | number | undefined)?.toString() ?? "",
@@ -117,21 +120,21 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
   return (
     <form onSubmit={handleSave} className="flex flex-col gap-6">
       {/* Identity */}
-      <Section title="Identity" icon="person">
+      <Section title={t("profile.section.identity")} icon="person">
         <TextField
-          label="Full name"
+          label={t("profile.field.fullName")}
           value={form.full_name}
           onChange={(v) => setForm({ ...form, full_name: v })}
           placeholder="Alex Miller"
         />
         <TextField
-          label="Email"
+          label={t("auth.email")}
           value={form.email}
           onChange={() => {}}
           disabled
         />
         <SelectField
-          label="Education level"
+          label={t("profile.field.educationLevel")}
           value={form.education_level}
           onChange={(v) => setForm({ ...form, education_level: v })}
           options={EDUCATION_LEVELS}
@@ -139,10 +142,10 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
       </Section>
 
       {/* Story */}
-      <Section title="A bit about you" icon="description">
+      <Section title={t("profile.section.story")} icon="description">
         <label className="block">
           <span className="block font-body text-label-lg text-on-surface-variant mb-2">
-            Short bio
+            {t("profile.field.bio")}
           </span>
           <textarea
             value={form.bio}
@@ -155,47 +158,83 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
       </Section>
 
       {/* Interests */}
-      <Section title="Interests" icon="interests">
+      <Section title={t("profile.section.interests")} icon="interests">
         <ChipEditor
-          label="What excites you academically?"
+          label={t("profile.field.interestsLabel")}
           values={form.interests}
           suggestions={INTEREST_SUGGESTIONS}
           onChange={(v) => setForm({ ...form, interests: v })}
-          placeholder="Add an interest and press Enter"
+          placeholder={t("profile.field.interestsPlaceholder")}
         />
       </Section>
 
       {/* Skills */}
-      <Section title="Skills" icon="bolt">
+      <Section title={t("profile.section.skills")} icon="bolt">
         <ChipEditor
-          label="Skills you already have"
+          label={t("profile.field.skillsLabel")}
           values={form.skills}
           suggestions={SKILL_SUGGESTIONS}
           onChange={(v) => setForm({ ...form, skills: v })}
-          placeholder="Add a skill and press Enter"
+          placeholder={t("profile.field.skillsPlaceholder")}
         />
       </Section>
 
       {/* Countries */}
-      <Section title="Preferred countries" icon="public">
+      <Section title={t("profile.section.countries")} icon="public">
         <ChipEditor
-          label="Where would you like to study?"
+          label={t("profile.field.countriesLabel")}
           values={form.preferred_countries}
           suggestions={COUNTRY_SUGGESTIONS}
           onChange={(v) => setForm({ ...form, preferred_countries: v })}
-          placeholder="Add a country and press Enter"
+          placeholder={t("profile.field.countriesPlaceholder")}
         />
       </Section>
 
       {/* Grades (optional) */}
-      <Section title="Academic record (optional)" icon="grade">
+      <Section title={t("profile.section.grades")} icon="grade">
         <TextField
-          label="Current GPA (out of 4.0)"
+          label={t("profile.field.gpa")}
           value={gpa}
           onChange={setGpa}
           placeholder="e.g. 3.7"
         />
       </Section>
+
+      {/* Language toggle */}
+      <section className="bg-surface-container-high rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-9 h-9 rounded-lg bg-surface-variant flex items-center justify-center">
+            <span className="material-symbols-outlined text-primary">language</span>
+          </div>
+          <div>
+            <p className="text-label-md font-semibold uppercase tracking-wider text-primary mb-0.5">
+              {t("profile.lang.eyebrow")}
+            </p>
+            <h2 className="font-headline text-title-lg text-on-surface font-bold">
+              {t("profile.lang.heading")}
+            </h2>
+          </div>
+        </div>
+        <p className="font-body text-body-md text-on-surface-variant mb-4">
+          {t("profile.lang.subheading")}
+        </p>
+        <div className="flex gap-3">
+          {(["en", "ar"] as Lang[]).map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => void setLang(l)}
+              className={`px-5 py-2.5 rounded-full font-body text-body-md font-semibold border transition-all ${
+                lang === l
+                  ? "bg-primary text-on-primary border-primary"
+                  : "border-outline-variant text-on-surface-variant hover:border-primary"
+              }`}
+            >
+              {l === "en" ? t("profile.lang.english") : t("profile.lang.arabic")}
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* Actions */}
       <div className="flex items-center gap-3 sticky bottom-4 glass-panel rounded-xl p-4 mt-2">
@@ -204,7 +243,7 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
           disabled={saving}
           className="btn-primary disabled:opacity-60"
         >
-          {saving ? "Saving…" : "Save profile"}
+          {saving ? t("common.loading") : t("profile.save")}
         </button>
         {message && (
           <span

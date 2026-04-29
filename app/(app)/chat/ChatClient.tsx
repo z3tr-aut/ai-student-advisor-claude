@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SuggestionChip from "@/components/SuggestionChip";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -9,6 +9,8 @@ import {
   type MessageMetadata,
   type SchedulePick,
 } from "@/lib/advisor/chat-payload";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localizedDay } from "@/lib/i18n/dict";
 
 type Msg = {
   role: "user" | "assistant";
@@ -26,11 +28,11 @@ type Profile = {
   bio?: string | null;
 };
 
-const QUICK_REPLIES = [
-  "Tell me more",
-  "What majors fit this?",
-  "Which universities?",
-  "Skills I should build",
+const QUICK_REPLY_KEYS = [
+  "chat.quickReply.tellMore",
+  "chat.quickReply.majors",
+  "chat.quickReply.universities",
+  "chat.quickReply.skills",
 ];
 
 const FIXTURE_SCHEDULE_KEY = "studentSchedule:current";
@@ -57,6 +59,7 @@ export default function ChatClient({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t, lang } = useI18n();
   const [messages, setMessages] = useState<Msg[]>(initialMessages);
   const [sessionId, setSessionId] = useState<string | null>(initialSessionId);
   const [input, setInput] = useState("");
@@ -66,6 +69,8 @@ export default function ChatClient({
   const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const seedFired = useRef(false);
+
+  const quickReplies = useMemo(() => QUICK_REPLY_KEYS.map((k) => t(k)), [t]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -107,6 +112,7 @@ export default function ChatClient({
           messages: updated.map(({ role, content }) => ({ role, content })),
           sessionId,
           profile,
+          lang,
         }),
       });
 
@@ -184,7 +190,7 @@ export default function ChatClient({
         );
       }
       setAccept(null);
-      setToast("Saved to My Schedule");
+      setToast(t("chat.toast.saved"));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Save failed";
       setAccept(accept ? { ...accept, busy: false } : null);
@@ -205,10 +211,10 @@ export default function ChatClient({
               </span>
             </div>
             <h2 className="font-headline text-headline-lg text-on-surface mb-3">
-              What would you like to explore?
+              {t("chat.empty.title")}
             </h2>
             <p className="font-body text-body-md text-on-surface-variant">
-              Ask me about majors, careers, universities, or your next step.
+              {t("chat.empty.body")}
             </p>
           </div>
         ) : (
@@ -223,6 +229,8 @@ export default function ChatClient({
                 key={i}
                 msg={m}
                 onAccept={(picks, total) => openAccept(picks, total)}
+                t={t}
+                lang={lang}
               />
             ))}
             {streaming && messages[messages.length - 1]?.content === "" && (
@@ -235,7 +243,7 @@ export default function ChatClient({
       {!empty && !streaming && (
         <div className="px-4 md:px-8 pb-3">
           <div className="max-w-3xl mx-auto flex flex-wrap gap-2 justify-center">
-            {QUICK_REPLIES.map((q) => (
+            {quickReplies.map((q) => (
               <SuggestionChip key={q} label={q} onClick={() => send(q)} />
             ))}
           </div>
@@ -272,7 +280,7 @@ export default function ChatClient({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={streaming}
-              placeholder="Ask about majors, careers, universities…"
+              placeholder={t("chat.placeholder")}
               className="flex-1 bg-transparent outline-none text-on-surface font-body text-body-md placeholder:text-on-surface-variant/70 py-2 disabled:opacity-60"
             />
             <button
@@ -291,27 +299,25 @@ export default function ChatClient({
 
       <ConfirmDialog
         open={!!accept?.open}
-        title="Save this schedule?"
+        title={t("chat.acceptDialog.title")}
         body={
           accept ? (
             <div className="flex flex-col gap-2">
               <p>
-                {accept.picks.length} courses, {accept.totalCredits} credits.
-                Replaces any schedule you&apos;ve previously accepted for the
-                current semester.
+                {t("chat.acceptDialog.summary", { count: accept.picks.length, credits: accept.totalCredits })}
               </p>
               <ul className="text-body-sm text-on-surface-variant pl-4 list-disc">
                 {accept.picks.map((p) => (
                   <li key={p.schedule_id}>
-                    {p.course_name} — {p.day} {p.start_time}–{p.end_time}
+                    {lang === "ar" && p.course_name_ar ? p.course_name_ar : p.course_name} — {localizedDay(p.day, lang as "en" | "ar")} {p.start_time}–{p.end_time}
                   </li>
                 ))}
               </ul>
             </div>
           ) : null
         }
-        confirmLabel="Save schedule"
-        cancelLabel="Not yet"
+        confirmLabel={t("chat.acceptDialog.confirm")}
+        cancelLabel={t("common.notYet")}
         busy={accept?.busy ?? false}
         onConfirm={confirmAccept}
         onCancel={() => accept && !accept.busy && setAccept(null)}
@@ -323,9 +329,13 @@ export default function ChatClient({
 function MessageBubble({
   msg,
   onAccept,
+  t,
+  lang,
 }: {
   msg: Msg;
   onAccept: (picks: SchedulePick[], totalCredits: number) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
+  lang: string;
 }) {
   const isUser = msg.role === "user";
 
@@ -353,7 +363,7 @@ function MessageBubble({
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-label-md font-semibold uppercase tracking-wider text-primary mb-2">
-          Advisor AI
+          {t("chat.advisor")}
         </p>
         <div className="bg-surface-container-high rounded-2xl rounded-tl-md px-5 py-4">
           <p className="font-body text-body-md text-on-surface whitespace-pre-wrap leading-relaxed">
@@ -362,15 +372,14 @@ function MessageBubble({
           {schedule && schedule.picks.length > 0 && (
             <div className="mt-4 pt-4 border-t border-outline-variant flex items-center justify-between gap-3 flex-wrap">
               <p className="font-body text-body-sm text-on-surface-variant">
-                {schedule.picks.length} courses · {schedule.total_credits}{" "}
-                credits
+                {t("myschedule.summary", { count: schedule.picks.length, credits: schedule.total_credits })}
               </p>
               <button
                 type="button"
                 onClick={() => onAccept(schedule.picks, schedule.total_credits)}
                 className="btn-primary text-body-sm py-2 px-4"
               >
-                Accept this schedule
+                {t("chat.accept")}
               </button>
             </div>
           )}

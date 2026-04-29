@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import StudyTipsClient, { type AcceptedCourse } from "./StudyTipsClient";
+import { resolveServerLang } from "@/lib/i18n/serverLang";
+import { translate } from "@/lib/i18n/dict";
 
 export default async function StudyTipsPage() {
   const supabase = createClient();
+  const lang = await resolveServerLang();
+  const t = (key: string) => translate(lang, key);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -56,14 +60,13 @@ export default async function StudyTipsPage() {
     <div className="px-6 md:px-12 py-10 max-w-5xl mx-auto">
       <div className="mb-10">
         <p className="text-label-md font-semibold uppercase tracking-wider text-primary mb-2">
-          PER-COURSE GUIDANCE
+          {t("tips.eyebrow")}
         </p>
         <h1 className="font-headline text-display-sm text-on-surface mb-3">
-          Study Tips
+          {t("tips.heading")}
         </h1>
         <p className="font-body text-body-lg text-on-surface-variant max-w-2xl">
-          Tips for the courses you&apos;ve accepted into your schedule. Better
-          tips come from a richer profile and the advisor.
+          {t("tips.subheading")}
         </p>
       </div>
 

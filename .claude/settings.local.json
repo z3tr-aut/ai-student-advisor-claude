@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git mv *)",
+      "Bash(git rm *)",
+      "Bash(npx tsc *)",
+      "Bash(npx next *)",
+      "Bash(git stash *)",
+      "Bash(npm test *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(netstat -ano)",
+      "Bash(tasklist //FI \"PID eq 29344\")",
+      "Bash(awk -F= '{ k=$1; sub\\(/^[^=]+=/, \"\", $0\\); v=$0; len=length\\(v\\); first8=substr\\(v,1,8\\); printf \"%-40s len=%d first=%s…\\\\n\", k, len, first8 }' .env.local)",
+      "Bash(git check-ignore *)",
+      "Bash(git add *)",
+      "Bash(npx tsx *)",
+      "Bash(npm install *)",
+      "Bash(npm ls *)"
+    ]
+  }
+}

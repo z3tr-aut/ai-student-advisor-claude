@@ -4,9 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { t } = useI18n();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -38,14 +40,11 @@ export default function SignupPage() {
       return;
     }
 
-    // If email confirmation is required the session will be null.
     if (data.session) {
       router.push("/dashboard");
       router.refresh();
     } else {
-      setInfo(
-        "Account created! Check your inbox for a confirmation link before signing in.",
-      );
+      setInfo(t("auth.confirmEmail"));
     }
   }
 
@@ -58,16 +57,17 @@ export default function SignupPage() {
 
       <div className="relative w-full max-w-md">
         <div className="text-center mb-10">
-          <div className="inline-flex w-14 h-14 rounded-2xl bg-cta-gradient items-center justify-center mb-6">
+          <div className="inline-flex w-14 h-14 rounded-2xl bg-cta-gradient items-center justify-center mb-4">
             <span className="material-symbols-outlined text-white" style={{ fontSize: "28px" }}>
               school
             </span>
           </div>
+          <p className="font-headline text-title-md font-black text-on-surface mb-2">{t("brand.name")}</p>
           <h1 className="font-headline text-display-sm text-on-surface mb-2">
-            Begin your journey
+            {t("auth.signUp")}
           </h1>
           <p className="font-body text-body-md text-on-surface-variant">
-            Let&apos;s map your academic path, together.
+            {t("auth.tagline")}
           </p>
         </div>
 
@@ -77,7 +77,7 @@ export default function SignupPage() {
         >
           <div>
             <label className="block font-body text-label-lg text-on-surface-variant mb-2">
-              Full name
+              {t("auth.fullName")}
             </label>
             <input
               type="text"
@@ -91,7 +91,7 @@ export default function SignupPage() {
           </div>
           <div>
             <label className="block font-body text-label-lg text-on-surface-variant mb-2">
-              Email
+              {t("auth.email")}
             </label>
             <input
               type="email"
@@ -105,7 +105,7 @@ export default function SignupPage() {
           </div>
           <div>
             <label className="block font-body text-label-lg text-on-surface-variant mb-2">
-              Password
+              {t("auth.password")}
             </label>
             <input
               type="password"
@@ -115,7 +115,7 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
               className="w-full bg-surface-container-high text-on-surface font-body text-body-md px-4 py-3 rounded-lg outline-none focus:shadow-glow transition-all"
-              placeholder="At least 6 characters"
+              placeholder="••••••••"
             />
           </div>
 
@@ -135,13 +135,13 @@ export default function SignupPage() {
             disabled={loading}
             className="btn-primary w-full mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? "Creating account…" : "Create account"}
+            {loading ? t("common.loading") : t("auth.createAccount")}
           </button>
 
           <p className="text-center font-body text-body-sm text-on-surface-variant mt-2">
-            Already have an account?{" "}
+            {t("auth.haveAccount")}{" "}
             <Link href="/login" className="text-primary font-semibold hover:underline">
-              Sign in
+              {t("auth.signInHere")}
             </Link>
           </p>
         </form>

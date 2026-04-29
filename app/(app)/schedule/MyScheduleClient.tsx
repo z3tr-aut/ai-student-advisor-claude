@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import type { SchedulePick } from "@/lib/advisor/chat-payload";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localizedDay } from "@/lib/i18n/dict";
 
 const FIXTURE_SCHEDULE_KEY = "studentSchedule:current";
 
 const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"] as const;
 
-type Row = SchedulePick & { instructor_name?: string | null; room_name?: string | null };
+type Row = SchedulePick;
 
 type Props = {
   mode: "fixture" | "supabase";
@@ -18,6 +20,7 @@ type Props = {
 };
 
 export default function MyScheduleClient({ mode, initialRows, totalCredits }: Props) {
+  const { t, lang } = useI18n();
   const [rows, setRows] = useState<Row[]>(initialRows);
   const [credits, setCredits] = useState<number>(totalCredits);
   const [discard, setDiscard] = useState<{ open: boolean; busy: boolean }>({
@@ -67,7 +70,7 @@ export default function MyScheduleClient({ mode, initialRows, totalCredits }: Pr
   if (!hydrated) {
     return (
       <p className="font-body text-body-md text-on-surface-variant text-center py-12">
-        Loading…
+        {t("common.loading")}
       </p>
     );
   }
@@ -81,17 +84,16 @@ export default function MyScheduleClient({ mode, initialRows, totalCredits }: Pr
           </span>
         </div>
         <h3 className="font-headline text-headline-sm text-on-surface mb-3">
-          No schedule accepted yet
+          {t("myschedule.empty.title")}
         </h3>
         <p className="font-body text-body-md text-on-surface-variant max-w-md mx-auto mb-6">
-          Build a schedule with the advisor and click Accept. It&apos;ll be
-          saved here.
+          {t("myschedule.empty.body")}
         </p>
         <Link href="/chat" className="btn-primary inline-flex items-center gap-2">
           <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
             chat_bubble
           </span>
-          Open chat
+          {t("common.openChat")}
         </Link>
       </div>
     );
@@ -114,21 +116,21 @@ export default function MyScheduleClient({ mode, initialRows, totalCredits }: Pr
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <p className="font-body text-body-md text-on-surface-variant">
-          {rows.length} courses · {credits} credits
+          {t("myschedule.summary", { count: rows.length, credits })}
         </p>
         <div className="flex gap-2">
           <Link
-            href="/chat?prompt=I%20want%20to%20change%20my%20schedule"
+            href={`/chat?prompt=${encodeURIComponent(t("myschedule.editPrompt"))}`}
             className="btn-secondary text-body-sm py-2 px-4"
           >
-            Edit in chat
+            {t("myschedule.editInChat")}
           </Link>
           <button
             type="button"
             onClick={() => setDiscard({ open: true, busy: false })}
             className="btn-secondary text-body-sm py-2 px-4 text-red-700"
           >
-            Discard
+            {t("myschedule.discard")}
           </button>
         </div>
       </div>
@@ -144,12 +146,16 @@ export default function MyScheduleClient({ mode, initialRows, totalCredits }: Pr
                 {r.course_name}
               </p>
               <p className="font-body text-body-sm text-on-surface-variant mt-1">
-                {r.instructor_name ?? "Instructor TBA"} ·{" "}
-                {r.room_name ?? r.room_id ? `Room ${r.room_name ?? r.room_id}` : "Room TBA"}
+                {r.instructor_name ?? t("myschedule.instructorTBA")} ·{" "}
+                {r.room_name
+                  ? t("myschedule.roomLabel", { name: r.room_name })
+                  : r.room_id
+                  ? t("myschedule.roomLabel", { name: r.room_id })
+                  : t("myschedule.roomTBA")}
               </p>
             </div>
             <div className="text-right shrink-0">
-              <p className="font-headline text-title-sm font-semibold">{r.day}</p>
+              <p className="font-headline text-title-sm font-semibold">{localizedDay(r.day, lang)}</p>
               <p className="font-body text-body-sm text-on-surface-variant">
                 {r.start_time}–{r.end_time}
               </p>
@@ -160,15 +166,12 @@ export default function MyScheduleClient({ mode, initialRows, totalCredits }: Pr
 
       <ConfirmDialog
         open={discard.open}
-        title="Discard your schedule?"
+        title={t("myschedule.discardDialog.title")}
         body={
-          <p>
-            This removes all {rows.length} accepted picks for the current
-            semester. You can build a new one in chat.
-          </p>
+          <p>{t("myschedule.discardDialog.body", { count: rows.length })}</p>
         }
-        confirmLabel="Discard"
-        cancelLabel="Keep it"
+        confirmLabel={t("myschedule.discard")}
+        cancelLabel={t("common.keepIt")}
         destructive
         busy={discard.busy}
         onConfirm={confirmDiscard}

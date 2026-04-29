@@ -10,12 +10,21 @@ export type CourseType = "required" | "elective" | "university" | "faculty";
 
 export type Course = {
   id: string;
-  name: string;
+  name: string;             // canonical (English) — used by engine internals
+  nameAr?: string;          // optional Arabic display name; null/undefined falls back to `name`
   credits: number;
   type: CourseType;
   prereqIds: string[];       // strict prereqs only — must be passed before enrolling
   semesterOrder?: number | null;
 };
+
+export type Lang = "en" | "ar";
+
+/** Pick the right display name for the active language. Falls back to English. */
+export function courseDisplayName(course: { name: string; nameAr?: string }, lang: Lang): string {
+  if (lang === "ar" && course.nameAr) return course.nameAr;
+  return course.name;
+}
 
 export type StudentHistory = {
   passed: Set<string>;
