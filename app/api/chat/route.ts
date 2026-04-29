@@ -155,13 +155,48 @@ export async function POST(req: Request) {
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const systemPrompt = buildSystemPrompt(profile, academic, lang);
-  const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-  const geminiModel = genAI.getGenerativeModel({
-    model: modelName,
-    systemInstruction: systemPrompt,
-    tools: [{ functionDeclarations: advisorTools }],
-  });
+  // Model cascade: try the preferred model first, fall back to stable alternatives on 503.
+  const MODEL_CASCADE = [
+    process.env.GEMINI_MODEL || "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+  ].filter((m, i, arr) => arr.indexOf(m) === i); // deduplicate
+
+  function makeModel(name: string) {
+    return genAI.getGenerativeModel({
+      model: name,
+      systemInstruction: systemPrompt,
+      tools: [{ functionDeclarations: advisorTools }],
+    });
+  }
+
+  function is503(err: unknown): boolean {
+    const msg = err instanceof Error ? err.message : String(err);
+    return msg.includes("503") || msg.toLowerCase().includes("service unavailable") || msg.toLowerCase().includes("high demand");
+  }
+
+  async function sendWithRetry(
+    modelName: string,
+    chat: ReturnType<ReturnType<typeof genAI.getGenerativeModel>["startChat"]>,
+    message: string | Array<{ functionResponse: { name: string; response: Record<string, unknown> } }>
+  ) {
+    const MAX_RETRIES = 2;
+    let lastErr: unknown;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return await chat.sendMessage(message as string);
+      } catch (err) {
+        lastErr = err;
+        if (!is503(err) || attempt === MAX_RETRIES) throw err;
+        // Exponential backoff: 1s, 2s
+        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      }
+    }
+    throw lastErr;
+  }
+
+  let geminiModel = makeModel(MODEL_CASCADE[0]);
 
   const history: Content[] = messages
     .slice(0, -1)
@@ -178,13 +213,33 @@ export async function POST(req: Request) {
       const toolTraces: Array<{ tool: string; args: unknown; result: unknown }> = [];
       let scheduleMetadata: ScheduleMessageMetadata | null = null;
       try {
-        const chat = geminiModel.startChat({ history });
+        let activeModelName = MODEL_CASCADE[0];
+        let chat = geminiModel.startChat({ history });
 
         // Tool-calling loop: keep feeding function responses back until the model stops asking.
         let nextMessage: string | Array<{ functionResponse: { name: string; response: Record<string, unknown> } }> =
           latestUserMsg.content;
         for (let turn = 0; turn < 4; turn++) {
-          const result = await chat.sendMessage(nextMessage as string); // (also accepts parts[])
+          let result;
+          try {
+            result = await sendWithRetry(activeModelName, chat, nextMessage);
+          } catch (err) {
+            // If 503 persists after retries, cascade to the next model in the list.
+            if (is503(err)) {
+              const idx = MODEL_CASCADE.indexOf(activeModelName);
+              const next = MODEL_CASCADE[idx + 1];
+              if (next) {
+                activeModelName = next;
+                geminiModel = makeModel(next);
+                chat = geminiModel.startChat({ history });
+                result = await sendWithRetry(activeModelName, chat, nextMessage);
+              } else {
+                throw err; // all models exhausted
+              }
+            } else {
+              throw err;
+            }
+          }
           const response = result.response;
           const calls = response.functionCalls?.() ?? [];
 
