@@ -120,6 +120,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "GEMINI_API_KEY is not configured." }, { status: 500 });
   }
 
+  // If client supplied a sessionId, verify it belongs to this user before using it.
+  // Without this check, a user could pollute another user's session storage by passing
+  // someone else's session UUID. RLS would block reads but writes would succeed.
+  if (sessionId) {
+    const { data: ownedSession } = await supabase
+      .from("chat_sessions")
+      .select("id")
+      .eq("id", sessionId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!ownedSession) {
+      sessionId = null;
+    }
+  }
+
   if (!sessionId) {
     const title = latestUserMsg.content.slice(0, 60).trim() + (latestUserMsg.content.length > 60 ? "…" : "");
     const { data: newSession, error: sessionErr } = await supabase
@@ -214,8 +229,8 @@ export async function POST(req: Request) {
 
         controller.close();
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Gemini API error";
-        controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`));
+        console.error("[/api/chat] Gemini stream error:", err);
+        controller.enqueue(encoder.encode("\n\n[Error: Something went wrong. Please try again.]"));
         controller.close();
       }
     },

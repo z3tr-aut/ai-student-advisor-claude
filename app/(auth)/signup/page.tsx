@@ -34,7 +34,8 @@ export default function SignupPage() {
     setLoading(false);
 
     if (error) {
-      setError(error.message);
+      console.error("[signup] Supabase auth error:", error.message);
+      setError("Could not create account. The email may already be in use, or your password may be too weak.");
       return;
     }
 

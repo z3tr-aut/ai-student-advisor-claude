@@ -22,7 +22,12 @@ function LoginForm() {
     setLoading(true);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { setError(error.message); setLoading(false); return; }
+    if (error) {
+      console.error("[login] Supabase auth error:", error.message);
+      setError("Invalid email or password.");
+      setLoading(false);
+      return;
+    }
     router.push(redirectTo);
     router.refresh();
   }

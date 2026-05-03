@@ -35,7 +35,10 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/chat") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/recommendations") ||
-    pathname.startsWith("/history");
+    pathname.startsWith("/history") ||
+    pathname.startsWith("/courses") ||
+    pathname.startsWith("/advisor") ||
+    pathname.startsWith("/onboarding");
 
   const isAuthRoute =
     pathname.startsWith("/login") || pathname.startsWith("/signup");

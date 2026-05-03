@@ -12,11 +12,10 @@
     "seed:students": "tsx --env-file=.env.local scripts/seed-test-students.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.30.1",
     "@google/generative-ai": "^0.24.1",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.46.1",
-    "next": "14.2.18",
+    "next": "14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
