@@ -1,41 +1,15 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import DashboardPromptBox from "./DashboardPromptBox";
+import { resolveServerLang } from "@/lib/i18n/serverLang";
+import { translate } from "@/lib/i18n/dict";
 
 const QUICK_STARTS = [
-  {
-    icon: "balance",
-    eyebrow: "EXPLORE",
-    title: "Find my major",
-    description: "Match my interests to degree programs",
-    prompt:
-      "Based on my interests and skills, what majors should I consider? Explain why each is a good fit.",
-  },
-  {
-    icon: "work",
-    eyebrow: "CAREER",
-    title: "Career paths",
-    description: "Show me where my profile leads",
-    prompt:
-      "Given my profile, what are the most promising career paths for me in the next 5–10 years?",
-  },
-  {
-    icon: "school",
-    eyebrow: "UNIVERSITIES",
-    title: "Right-fit schools",
-    description: "Suggest universities for me",
-    prompt:
-      "Recommend universities that fit my preferred countries, interests, and academic strengths.",
-  },
-  {
-    icon: "trending_up",
-    eyebrow: "STRATEGY",
-    title: "Study roadmap",
-    description: "Plan the next semester",
-    prompt:
-      "Build me a semester roadmap to build the skills I need for my target career.",
-  },
-];
+  { icon: "balance", prefix: "dashboard.qs.major" },
+  { icon: "work", prefix: "dashboard.qs.career" },
+  { icon: "school", prefix: "dashboard.qs.univ" },
+  { icon: "trending_up", prefix: "dashboard.qs.strategy" },
+] as const;
 
 export default async function DashboardPage() {
   const supabase = createClient();
@@ -55,6 +29,9 @@ export default async function DashboardPage() {
     "there";
 
   const hasInterests = (profile?.interests?.length ?? 0) > 0;
+  const lang = await resolveServerLang();
+  const t = (k: string, params?: Record<string, string | number>) =>
+    translate(lang, k, params);
 
   return (
     <div className="px-6 md:px-12 py-10 md:py-16 max-w-5xl mx-auto">
@@ -69,11 +46,10 @@ export default async function DashboardPage() {
           </span>
         </div>
         <h1 className="font-headline text-display-md md:text-display-lg text-on-surface mb-4">
-          Hi {firstName}, I&apos;m your Smart Advisor.
+          {t("dashboard.greeting", { name: firstName })}
         </h1>
         <p className="font-body text-body-lg text-on-surface-variant max-w-2xl mx-auto">
-          Tell me about your goals and interests. I&apos;ll help you choose the
-          right major, explore careers, and find universities that fit you.
+          {t("dashboard.subhead")}
         </p>
       </div>
 
@@ -87,18 +63,17 @@ export default async function DashboardPage() {
           </div>
           <div className="flex-1">
             <p className="font-headline text-title-md text-on-surface font-bold">
-              Personalise your recommendations
+              {t("dashboard.nudge.title")}
             </p>
             <p className="font-body text-body-sm text-on-surface-variant mt-1">
-              Add your interests, skills, and preferred countries so I can give
-              you sharper advice.
+              {t("dashboard.nudge.body")}
             </p>
           </div>
           <Link
             href="/profile"
             className="btn-secondary text-body-sm shrink-0"
           >
-            Complete profile
+            {t("dashboard.nudge.cta")}
           </Link>
         </div>
       )}
@@ -107,8 +82,8 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
         {QUICK_STARTS.map((item) => (
           <Link
-            key={item.title}
-            href={`/chat?prompt=${encodeURIComponent(item.prompt)}`}
+            key={item.prefix}
+            href={`/chat?prompt=${encodeURIComponent(t(`${item.prefix}.prompt`))}`}
             className="advisor-card group cursor-pointer"
           >
             <div className="flex items-start gap-4">
@@ -119,13 +94,13 @@ export default async function DashboardPage() {
               </div>
               <div className="flex-1">
                 <p className="text-label-md font-semibold uppercase tracking-wider text-primary mb-1">
-                  {item.eyebrow}
+                  {t(`${item.prefix}.eyebrow`)}
                 </p>
                 <h3 className="font-headline text-title-lg text-on-surface font-bold mb-1">
-                  {item.title}
+                  {t(`${item.prefix}.title`)}
                 </h3>
                 <p className="font-body text-body-sm text-on-surface-variant">
-                  {item.description}
+                  {t(`${item.prefix}.desc`)}
                 </p>
               </div>
             </div>
@@ -137,7 +112,7 @@ export default async function DashboardPage() {
       <DashboardPromptBox />
 
       <p className="text-center text-label-md uppercase tracking-widest text-on-surface-variant mt-12">
-        Powered by AI Advisor Engine · {new Date().getFullYear()}
+        {t("dashboard.footer", { year: new Date().getFullYear() })}
       </p>
     </div>
   );

@@ -16,6 +16,20 @@ import { recommendForUser, type RecommendOutcome } from "./select";
 import { recommendForSemester, type RecommendResult } from "./engine";
 import { recommendSchedule, type ScheduleResult } from "./schedule";
 import { buildStudentScenario, type Day, type StudentScenario } from "./fixtures";
+import coursesJson from "./fixtures/data/courses.json";
+
+// Course-id → Arabic name lookup, used to add an `ar` variant to every
+// chat-tool response. The LLM picks the right one based on the language
+// directive in the system prompt.
+const COURSE_NAME_AR: Record<string, string> = Object.fromEntries(
+  (coursesJson as Array<{ course_id: number; course_name_ar?: string }>)
+    .filter((c) => c.course_name_ar)
+    .map((c) => [String(c.course_id), c.course_name_ar as string])
+);
+
+function arName(courseId: string, fallback: string): string {
+  return COURSE_NAME_AR[courseId] ?? fallback;
+}
 
 export const advisorTools: FunctionDeclaration[] = [
   {
@@ -151,12 +165,14 @@ function serializeFixtureCourseResult(
     picks: result.picks.map((c) => ({
       course_id: c.id,
       course_name: c.name,
+      course_name_ar: arName(c.id, c.name),
       credits: c.credits,
     })),
     eligible_remaining: result.eligibleCount,
     locked_examples: result.lockedByPrereq.slice(0, 5).map((l) => ({
       course_id: l.course.id,
       course_name: l.course.name,
+      course_name_ar: arName(l.course.id, l.course.name),
       missing_prereqs: l.missing,
     })),
     warnings: result.warnings,
@@ -177,6 +193,7 @@ function serializeFixtureScheduleResult(
     picks: result.picks.map((p) => ({
       course_id: p.course.id,
       course_name: p.course.name,
+      course_name_ar: arName(p.course.id, p.course.name),
       credits: p.course.credits,
       day: p.section.day,
       start_time: fmtMinutes(p.section.startMinutes),
@@ -186,6 +203,7 @@ function serializeFixtureScheduleResult(
     unscheduled: result.unscheduled.map((u) => ({
       course_id: u.course.id,
       course_name: u.course.name,
+      course_name_ar: arName(u.course.id, u.course.name),
       reason: u.reason,
     })),
     warnings: result.warnings,

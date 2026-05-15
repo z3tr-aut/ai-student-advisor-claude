@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import CoursesClient from "./CoursesClient";
+import { resolveServerLang } from "@/lib/i18n/serverLang";
+import { translate } from "@/lib/i18n/dict";
 
 export default async function CoursesPage() {
   const supabase = createClient();
@@ -42,13 +44,19 @@ export default async function CoursesPage() {
     .order("semester_id", { ascending: false })
     .limit(10);
 
+  const lang = await resolveServerLang();
+  const t = (k: string) => translate(lang, k);
+
   return (
     <div className="max-w-4xl mx-auto p-6 md:p-10">
+      <p className="text-label-md font-semibold uppercase tracking-wider text-primary mb-2">
+        {t("courses.eyebrow")}
+      </p>
       <h1 className="font-headline text-display-sm text-on-surface font-bold mb-2">
-        My Courses
+        {t("courses.heading")}
       </h1>
       <p className="font-body text-body-lg text-on-surface-variant mb-8">
-        Mark completed or currently-enrolled courses so the advisor stays accurate.
+        {t("courses.subheading")}
       </p>
       <CoursesClient
         stdId={std.std_id}

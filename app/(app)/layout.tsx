@@ -17,15 +17,13 @@ export default async function AppLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email, avatar_url, education_level")
+    .select("full_name, email, avatar_url")
     .eq("id", user.id)
     .single();
 
   const fullName =
     profile?.full_name || user.email?.split("@")[0] || "Student";
-  const subtitle =
-    profile?.education_level ||
-    (user.email ? user.email : "AI Student Advisor");
+  const subtitle = user.email || "AI Student Advisor";
 
   return (
     <div className="min-h-screen bg-surface">

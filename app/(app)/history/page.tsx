@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { resolveServerLang } from "@/lib/i18n/serverLang";
+import { translate } from "@/lib/i18n/dict";
 
 export default async function HistoryPage() {
   const supabase = createClient();
@@ -15,18 +17,20 @@ export default async function HistoryPage() {
     .limit(100);
 
   const list = sessions ?? [];
+  const lang = await resolveServerLang();
+  const t = (k: string) => translate(lang, k);
 
   return (
     <div className="px-6 md:px-12 py-10 max-w-4xl mx-auto">
       <div className="mb-10">
         <p className="text-label-md font-semibold uppercase tracking-wider text-primary mb-2">
-          INSIGHTS
+          {t("history.eyebrow")}
         </p>
         <h1 className="font-headline text-display-sm text-on-surface mb-2">
-          Conversation History
+          {t("history.heading")}
         </h1>
         <p className="font-body text-body-lg text-on-surface-variant">
-          Pick up where you left off — every chat with the Advisor is saved here.
+          {t("history.subheading")}
         </p>
       </div>
 
@@ -41,7 +45,7 @@ export default async function HistoryPage() {
             </span>
           </div>
           <h3 className="font-headline text-headline-sm text-on-surface mb-3">
-            No conversations yet
+            {t("history.empty.title")}
           </h3>
           <p className="font-body text-body-md text-on-surface-variant max-w-md mx-auto mb-6">
             Start a chat and your conversations will appear here — sorted by

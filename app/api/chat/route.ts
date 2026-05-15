@@ -58,6 +58,7 @@ function buildSystemPrompt(
     "  - recommend_courses — use for plain 'what can I take next semester' questions with no time preference.",
     "Default target_credits to 15 if the student didn't say.",
     "After a tool returns, talk through the result naturally. For build_schedule, list each pick on its own line as: course name, day, start-end time. Briefly mention warnings or unscheduled courses if any. If the tool returned an error, just explain it in one sentence.",
+    `When you mention a course by name, use the field that matches the reply language: when replying in Arabic, use 'course_name_ar' from the tool response; when replying in English, use 'course_name'. The preferred reply language is ${preferredLanguage === "ar" ? "Arabic" : "English"}.`,
     "For non-scheduling questions, answer from your own knowledge using the academic record below if it's relevant.",
     "Never make up admission deadlines, tuition, rankings — say where to verify instead.",
   ];

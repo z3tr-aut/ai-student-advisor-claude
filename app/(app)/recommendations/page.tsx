@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import AdvisorCard from "@/components/AdvisorCard";
+import { resolveServerLang } from "@/lib/i18n/serverLang";
+import { translate } from "@/lib/i18n/dict";
 
 const KIND_META: Record<
   string,
@@ -30,6 +32,8 @@ export default async function RecommendationsPage() {
     career: recommendations.filter((r) => r.kind === "career"),
     university: recommendations.filter((r) => r.kind === "university"),
   };
+  const lang = await resolveServerLang();
+  const t = (k: string) => translate(lang, k);
 
   return (
     <div className="px-6 md:px-12 py-10 max-w-6xl mx-auto">
@@ -37,13 +41,13 @@ export default async function RecommendationsPage() {
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
         <div>
           <p className="text-label-md font-semibold uppercase tracking-wider text-primary mb-2">
-            CURATED SELECTION
+            {t("recommendations.eyebrow")}
           </p>
           <h1 className="font-headline text-display-sm text-on-surface mb-2">
-            Your Recommendations
+            {t("recommendations.heading")}
           </h1>
           <p className="font-body text-body-lg text-on-surface-variant">
-            Everything the Advisor has suggested and you&apos;ve saved.
+            {t("recommendations.subheading")}
           </p>
         </div>
         <div className="glass-panel rounded-xl px-5 py-4 flex gap-6">

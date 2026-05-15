@@ -3,27 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type ProfileData = {
   full_name: string;
   email: string;
-  education_level: string;
   bio: string;
   interests: string[];
   skills: string[];
-  preferred_countries: string[];
   grades: Record<string, unknown>;
   preferred_language: "en" | "ar";
 };
-
-const EDUCATION_LEVELS = [
-  { value: "", label: "Select…" },
-  { value: "high_school", label: "High school" },
-  { value: "undergraduate", label: "Undergraduate" },
-  { value: "graduate", label: "Graduate" },
-  { value: "postgraduate", label: "Postgraduate" },
-  { value: "gap_year", label: "Gap year" },
-];
 
 const INTEREST_SUGGESTIONS = [
   "Technology",
@@ -50,22 +40,9 @@ const SKILL_SUGGESTIONS = [
   "Languages",
 ];
 
-const COUNTRY_SUGGESTIONS = [
-  "United States",
-  "United Kingdom",
-  "Canada",
-  "Germany",
-  "Netherlands",
-  "Australia",
-  "Japan",
-  "Singapore",
-  "France",
-  "UAE",
-  "Jordan",
-];
-
 export default function ProfileForm({ initial }: { initial: ProfileData }) {
   const router = useRouter();
+  const { t, setLang } = useI18n();
   const [form, setForm] = useState<ProfileData>(initial);
   const [gpa, setGpa] = useState<string>(
     (initial.grades?.gpa as string | number | undefined)?.toString() ?? "",
@@ -84,7 +61,7 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      setMessage({ kind: "err", text: "Not signed in." });
+      setMessage({ kind: "err", text: t("profile.notSignedIn") });
       setSaving(false);
       return;
     }
@@ -97,11 +74,9 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
       .from("profiles")
       .update({
         full_name: form.full_name || null,
-        education_level: form.education_level || null,
         bio: form.bio || null,
         interests: form.interests,
         skills: form.skills,
-        preferred_countries: form.preferred_countries,
         grades,
         preferred_language: form.preferred_language,
       })
@@ -111,7 +86,7 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
     if (error) {
       setMessage({ kind: "err", text: error.message });
     } else {
-      setMessage({ kind: "ok", text: "Profile saved." });
+      setMessage({ kind: "ok", text: t("profile.saved") });
       router.refresh();
     }
   }
@@ -119,91 +94,78 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
   return (
     <form onSubmit={handleSave} className="flex flex-col gap-6">
       {/* Interface language */}
-      <Section title="Interface language" icon="translate">
+      <Section title={t("profile.section.language")} icon="translate">
         <LanguageToggle
           value={form.preferred_language}
-          onChange={(v) => setForm({ ...form, preferred_language: v })}
+          onChange={(v) => {
+            setForm({ ...form, preferred_language: v });
+            // Switch live (cookie + refresh) so the entire UI flips immediately.
+            void setLang(v);
+          }}
         />
       </Section>
 
       {/* Identity */}
-      <Section title="Identity" icon="person">
+      <Section title={t("profile.section.identity")} icon="person">
         <TextField
-          label="Full name"
+          label={t("profile.field.fullName")}
           value={form.full_name}
           onChange={(v) => setForm({ ...form, full_name: v })}
-          placeholder="Alex Miller"
+          placeholder={t("profile.field.fullNamePlaceholder")}
         />
         <TextField
-          label="Email"
+          label={t("profile.field.email")}
           value={form.email}
           onChange={() => {}}
           disabled
         />
-        <SelectField
-          label="Education level"
-          value={form.education_level}
-          onChange={(v) => setForm({ ...form, education_level: v })}
-          options={EDUCATION_LEVELS}
-        />
       </Section>
 
       {/* Story */}
-      <Section title="A bit about you" icon="description">
+      <Section title={t("profile.section.story")} icon="description">
         <label className="block">
           <span className="block font-body text-label-lg text-on-surface-variant mb-2">
-            Short bio
+            {t("profile.field.bio")}
           </span>
           <textarea
             value={form.bio}
             onChange={(e) => setForm({ ...form, bio: e.target.value })}
             rows={3}
-            placeholder="e.g. Curious about AI, love hiking, looking for a balance between tech and design…"
+            placeholder={t("profile.field.bioPlaceholder")}
             className="w-full bg-surface-container-high text-on-surface font-body text-body-md px-4 py-3 rounded-lg outline-none focus:shadow-glow transition-all resize-none"
           />
         </label>
       </Section>
 
       {/* Interests */}
-      <Section title="Interests" icon="interests">
+      <Section title={t("profile.section.interests")} icon="interests">
         <ChipEditor
-          label="What excites you academically?"
+          label={t("profile.field.interestsLabel")}
           values={form.interests}
           suggestions={INTEREST_SUGGESTIONS}
           onChange={(v) => setForm({ ...form, interests: v })}
-          placeholder="Add an interest and press Enter"
+          placeholder={t("profile.field.interestsPlaceholder")}
         />
       </Section>
 
       {/* Skills */}
-      <Section title="Skills" icon="bolt">
+      <Section title={t("profile.section.skills")} icon="bolt">
         <ChipEditor
-          label="Skills you already have"
+          label={t("profile.field.skillsLabel")}
           values={form.skills}
           suggestions={SKILL_SUGGESTIONS}
           onChange={(v) => setForm({ ...form, skills: v })}
-          placeholder="Add a skill and press Enter"
-        />
-      </Section>
-
-      {/* Countries */}
-      <Section title="Preferred countries" icon="public">
-        <ChipEditor
-          label="Where would you like to study?"
-          values={form.preferred_countries}
-          suggestions={COUNTRY_SUGGESTIONS}
-          onChange={(v) => setForm({ ...form, preferred_countries: v })}
-          placeholder="Add a country and press Enter"
+          placeholder={t("profile.field.skillsPlaceholder")}
         />
       </Section>
 
       {/* Grades (optional) */}
-      <Section title="Academic record (optional)" icon="grade">
+      <Section title={t("profile.section.grades")} icon="grade">
         <TextField
-          label="Current GPA (out of 4.0)"
+          label={t("profile.field.gpa")}
           value={gpa}
           onChange={setGpa}
-          placeholder="e.g. 3.7"
+          placeholder={t("profile.field.gpaPlaceholder")}
         />
       </Section>
 
@@ -214,7 +176,7 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
           disabled={saving}
           className="btn-primary disabled:opacity-60"
         >
-          {saving ? "Saving…" : "Save profile"}
+          {saving ? t("profile.saving") : t("profile.save")}
         </button>
         {message && (
           <span
@@ -239,14 +201,15 @@ function LanguageToggle({
   value: "en" | "ar";
   onChange: (v: "en" | "ar") => void;
 }) {
+  const { t } = useI18n();
   const options: { value: "en" | "ar"; label: string; hint: string }[] = [
-    { value: "en", label: "English", hint: "LTR · default" },
-    { value: "ar", label: "العربية", hint: "RTL · يرد المساعد بالعربية" },
+    { value: "en", label: "English", hint: t("profile.lang.englishHint") },
+    { value: "ar", label: "العربية", hint: t("profile.lang.arabicHint") },
   ];
   return (
     <div className="flex flex-col gap-2">
       <span className="block font-body text-label-lg text-on-surface-variant">
-        Sets the interface direction and the language the advisor replies in.
+        {t("profile.lang.sub")}
       </span>
       <div className="flex gap-2">
         {options.map((opt) => {

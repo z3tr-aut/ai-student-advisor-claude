@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
-const NAV_ITEMS = [
-  { href: "/chat", label: "Chat Home", icon: "chat_bubble" },
-  { href: "/advisor", label: "Advisor", icon: "school" },
-  { href: "/courses", label: "My Courses", icon: "menu_book" },
-  { href: "/schedule", label: "My Schedule", icon: "calendar_month" },
-  { href: "/recommendations", label: "Recommendations", icon: "auto_awesome" },
-  { href: "/history", label: "History", icon: "history" },
+const NAV_ITEMS: { href: string; key: string; icon: string }[] = [
+  { href: "/chat", key: "sidebar.chatHome", icon: "chat_bubble" },
+  { href: "/advisor", key: "sidebar.advisor", icon: "school" },
+  { href: "/courses", key: "sidebar.courses", icon: "menu_book" },
+  { href: "/schedule", key: "sidebar.mySchedule", icon: "calendar_month" },
+  { href: "/recommendations", key: "sidebar.recommendations", icon: "auto_awesome" },
+  { href: "/history", key: "sidebar.history", icon: "history" },
 ];
 
 export default function Sidebar({
@@ -24,6 +25,7 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useI18n();
 
   async function handleLogout() {
     const supabase = createClient();
@@ -41,7 +43,7 @@ export default function Sidebar({
     .toUpperCase();
 
   return (
-    <aside className="hidden md:flex flex-col bg-surface-container-low w-64 fixed left-0 top-[72px] bottom-0 shadow-[40px_0_40px_-20px_rgba(0,0,0,0.3)] z-40">
+    <aside className="hidden md:flex flex-col bg-surface-container-low w-64 fixed start-0 top-[72px] bottom-0 shadow-[40px_0_40px_-20px_rgba(0,0,0,0.3)] z-40">
       {/* Scrollable top section */}
       <div className="flex flex-col gap-4 flex-1 overflow-y-auto py-8">
         {/* User card */}
@@ -73,7 +75,7 @@ export default function Sidebar({
         </div>
 
         {/* Primary nav */}
-        <nav className="flex flex-col gap-1 pr-4">
+        <nav className="flex flex-col gap-1 pe-4">
           {NAV_ITEMS.map((item) => {
             const active = pathname.startsWith(item.href);
             return (
@@ -83,7 +85,7 @@ export default function Sidebar({
                 className={`nav-link ${active ? "nav-link-active" : ""}`}
               >
                 <span className="material-symbols-outlined">{item.icon}</span>
-                <span>{item.label}</span>
+                <span>{t(item.key)}</span>
               </Link>
             );
           })}
@@ -96,7 +98,7 @@ export default function Sidebar({
             className="btn-primary w-full flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-base">add</span>
-            New Conversation
+            {t("sidebar.newConversation")}
           </Link>
         </div>
       </div>
@@ -105,10 +107,10 @@ export default function Sidebar({
       <div className="px-6 py-4 border-t border-outline-variant">
         <button
           onClick={handleLogout}
-          className="text-on-surface-variant hover:text-on-surface flex items-center gap-3 py-2 transition-all font-body text-body-sm font-semibold text-left w-full"
+          className="text-on-surface-variant hover:text-on-surface flex items-center gap-3 py-2 transition-all font-body text-body-sm font-semibold text-start w-full"
         >
           <span className="material-symbols-outlined">logout</span>
-          <span>Sign Out</span>
+          <span>{t("sidebar.signOut")}</span>
         </button>
       </div>
     </aside>

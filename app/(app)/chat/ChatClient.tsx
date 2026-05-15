@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SuggestionChip from "@/components/SuggestionChip";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -16,11 +17,11 @@ type Profile = {
   bio?: string | null;
 };
 
-const QUICK_REPLIES = [
-  "Tell me more",
-  "What majors fit this?",
-  "Which universities?",
-  "Skills I should build",
+const QUICK_REPLY_KEYS = [
+  "chat.quickReply.tellMore",
+  "chat.quickReply.majors",
+  "chat.quickReply.universities",
+  "chat.quickReply.skills",
 ];
 
 export default function ChatClient({
@@ -38,6 +39,7 @@ export default function ChatClient({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
   const [messages, setMessages] = useState<Msg[]>(initialMessages);
   const [sessionId, setSessionId] = useState<string | null>(initialSessionId);
   const [input, setInput] = useState("");
@@ -122,7 +124,7 @@ export default function ChatClient({
         });
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
+      const message = err instanceof Error ? err.message : t("chat.error.fallback");
       setError(message);
       setMessages((prev) => prev.slice(0, -1)); // drop the empty assistant bubble
     } finally {
@@ -152,10 +154,10 @@ export default function ChatClient({
               </span>
             </div>
             <h2 className="font-headline text-headline-lg text-on-surface mb-3">
-              What would you like to explore?
+              {t("chat.empty.title")}
             </h2>
             <p className="font-body text-body-md text-on-surface-variant">
-              Ask me about majors, careers, universities, or your next step.
+              {t("chat.empty.body")}
             </p>
           </div>
         ) : (
@@ -179,9 +181,10 @@ export default function ChatClient({
       {!empty && !streaming && (
         <div className="px-4 md:px-8 pb-3">
           <div className="max-w-3xl mx-auto flex flex-wrap gap-2 justify-center">
-            {QUICK_REPLIES.map((q) => (
-              <SuggestionChip key={q} label={q} onClick={() => send(q)} />
-            ))}
+            {QUICK_REPLY_KEYS.map((k) => {
+              const label = t(k);
+              return <SuggestionChip key={k} label={label} onClick={() => send(label)} />;
+            })}
           </div>
         </div>
       )}
@@ -209,7 +212,7 @@ export default function ChatClient({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={streaming}
-              placeholder="Ask about majors, careers, universities…"
+              placeholder={t("chat.placeholder")}
               className="flex-1 bg-transparent outline-none text-on-surface font-body text-body-md placeholder:text-on-surface-variant/70 py-2 disabled:opacity-60"
             />
             <button
@@ -233,6 +236,7 @@ export default function ChatClient({
 }
 
 function MessageBubble({ msg }: { msg: Msg }) {
+  const { t } = useI18n();
   const isUser = msg.role === "user";
 
   if (isUser) {
@@ -259,7 +263,7 @@ function MessageBubble({ msg }: { msg: Msg }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-label-md font-semibold uppercase tracking-wider text-primary mb-2">
-          Advisor AI
+          {t("chat.advisor")}
         </p>
         <div className="bg-surface-container-high rounded-2xl rounded-tl-md px-5 py-4">
           <p className="font-body text-body-md text-on-surface whitespace-pre-wrap leading-relaxed">

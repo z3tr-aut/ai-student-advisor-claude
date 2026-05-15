@@ -4,9 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { t } = useI18n();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -35,26 +37,23 @@ export default function SignupPage() {
 
     if (error) {
       console.error("[signup] Supabase auth error:", error.message);
-      setError("Could not create account. The email may already be in use, or your password may be too weak.");
+      setError(t("auth.signupError"));
       return;
     }
 
-    // If email confirmation is required the session will be null.
     if (data.session) {
       router.push("/dashboard");
       router.refresh();
     } else {
-      setInfo(
-        "Account created! Check your inbox for a confirmation link before signing in.",
-      );
+      setInfo(t("auth.confirmEmail"));
     }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] rounded-full bg-primary/10 blur-[120px]" />
-        <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-tertiary/10 blur-[120px]" />
+        <div className="absolute top-1/4 end-1/4 w-[500px] h-[500px] rounded-full bg-primary/10 blur-[120px]" />
+        <div className="absolute bottom-1/4 start-1/4 w-[400px] h-[400px] rounded-full bg-tertiary/10 blur-[120px]" />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -65,10 +64,10 @@ export default function SignupPage() {
             </span>
           </div>
           <h1 className="font-headline text-display-sm text-on-surface mb-2">
-            Begin your journey
+            {t("auth.beginJourney")}
           </h1>
           <p className="font-body text-body-md text-on-surface-variant">
-            Let&apos;s map your academic path, together.
+            {t("auth.tagline")}
           </p>
         </div>
 
@@ -78,7 +77,7 @@ export default function SignupPage() {
         >
           <div>
             <label className="block font-body text-label-lg text-on-surface-variant mb-2">
-              Full name
+              {t("auth.fullName")}
             </label>
             <input
               type="text"
@@ -87,12 +86,12 @@ export default function SignupPage() {
               onChange={(e) => setFullName(e.target.value)}
               autoComplete="name"
               className="w-full bg-surface-container-high text-on-surface font-body text-body-md px-4 py-3 rounded-lg outline-none focus:shadow-glow transition-all"
-              placeholder="Alex Miller"
+              placeholder={t("auth.fullNamePlaceholder")}
             />
           </div>
           <div>
             <label className="block font-body text-label-lg text-on-surface-variant mb-2">
-              Email
+              {t("auth.email")}
             </label>
             <input
               type="email"
@@ -101,12 +100,12 @@ export default function SignupPage() {
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
               className="w-full bg-surface-container-high text-on-surface font-body text-body-md px-4 py-3 rounded-lg outline-none focus:shadow-glow transition-all"
-              placeholder="you@university.edu"
+              placeholder={t("auth.emailPlaceholderSignup")}
             />
           </div>
           <div>
             <label className="block font-body text-label-lg text-on-surface-variant mb-2">
-              Password
+              {t("auth.password")}
             </label>
             <input
               type="password"
@@ -116,7 +115,7 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
               className="w-full bg-surface-container-high text-on-surface font-body text-body-md px-4 py-3 rounded-lg outline-none focus:shadow-glow transition-all"
-              placeholder="At least 6 characters"
+              placeholder={t("auth.passwordPlaceholderSignup")}
             />
           </div>
 
@@ -136,13 +135,13 @@ export default function SignupPage() {
             disabled={loading}
             className="btn-primary w-full mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? "Creating account…" : "Create account"}
+            {loading ? t("auth.creatingAccount") : t("auth.createAccountButton")}
           </button>
 
           <p className="text-center font-body text-body-sm text-on-surface-variant mt-2">
-            Already have an account?{" "}
+            {t("auth.haveAccount")}{" "}
             <Link href="/login" className="text-primary font-semibold hover:underline">
-              Sign in
+              {t("auth.signIn")}
             </Link>
           </p>
         </form>

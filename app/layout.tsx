@@ -1,36 +1,36 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
+import { resolveServerLang } from "@/lib/i18n/serverLang";
+import { I18nProvider } from "@/lib/i18n/I18nProvider";
 
 export const metadata: Metadata = {
-  title: "AI Student Advisor",
+  title: "Smart Advisor",
   description:
     "Your sophisticated AI guide for majors, careers, and universities.",
 };
-
-async function resolveLang(): Promise<"en" | "ar"> {
-  try {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return "en";
-    const { data } = await supabase
-      .from("profiles")
-      .select("preferred_language")
-      .eq("id", user.id)
-      .maybeSingle();
-    return data?.preferred_language === "ar" ? "ar" : "en";
-  } catch {
-    return "en";
-  }
-}
 
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const lang = await resolveLang();
+  const lang = await resolveServerLang();
   const dir = lang === "ar" ? "rtl" : "ltr";
+
+  // Whether the user is signed in — passed to I18nProvider so it knows
+  // whether to persist a language change to the profile row.
+  let authed = false;
+  try {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    authed = !!user;
+  } catch {
+    // Pre-auth pages or missing env — leave authed=false.
+  }
+
   return (
     <html lang={lang} dir={dir} className="dark">
       <head>
@@ -42,7 +42,7 @@ export default async function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Cairo:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
         <link
@@ -51,7 +51,9 @@ export default async function RootLayout({
         />
       </head>
       <body className="bg-surface text-on-surface font-body min-h-screen">
-        {children}
+        <I18nProvider initialLang={lang} authed={authed}>
+          {children}
+        </I18nProvider>
       </body>
     </html>
   );
