@@ -140,13 +140,11 @@ h1, h2, h3, h4, h5 {
 }
 .msg-in { animation: msg-in 0.3s ease-out; }
 
-/* ─────────────────────────────────────────
-   RTL support (when <html dir="rtl">)
+/* RTL support (when html dir is rtl).
    Minimal — we lean on Tailwind's logical
-   properties (ms-*/me-*/ps-*/pe-*) for most
-   spacing; this block fixes the few places
-   that still use directional rules.
-   ───────────────────────────────────────── */
+   properties (the ms-, me-, ps-, pe- variants)
+   for most spacing; this block fixes the few
+   places that still use directional rules. */
 html[dir="rtl"] body {
   font-family: "Inter", "Tajawal", "Cairo", system-ui, sans-serif;
 }
