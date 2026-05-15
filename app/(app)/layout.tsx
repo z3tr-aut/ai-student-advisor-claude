@@ -34,7 +34,7 @@ export default async function AppLayout({
           subtitle={subtitle}
           avatarUrl={profile?.avatar_url}
         />
-        <main className="flex-1 md:ml-64">{children}</main>
+        <main className="flex-1 md:ms-64">{children}</main>
       </div>
     </div>
   );

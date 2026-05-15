@@ -114,7 +114,7 @@ export default function AdvisorClient({ student }: { student: StudentContext }) 
         <div className="bg-red-50 border border-red-200 rounded-2xl p-4 font-body text-body-md text-red-700">
           {error}
           {error.includes("onboarding") && (
-            <Link href="/onboarding" className="ml-2 underline">
+            <Link href="/onboarding" className="ms-2 underline">
               Go to onboarding
             </Link>
           )}
