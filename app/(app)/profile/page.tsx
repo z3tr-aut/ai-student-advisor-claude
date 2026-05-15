@@ -38,6 +38,7 @@ export default async function ProfilePage() {
           skills: profile?.skills ?? [],
           preferred_countries: profile?.preferred_countries ?? [],
           grades: profile?.grades ?? {},
+          preferred_language: profile?.preferred_language === "ar" ? "ar" : "en",
         }}
       />
     </div>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "AI Student Advisor",
@@ -7,13 +8,31 @@ export const metadata: Metadata = {
     "Your sophisticated AI guide for majors, careers, and universities.",
 };
 
-export default function RootLayout({
+async function resolveLang(): Promise<"en" | "ar"> {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return "en";
+    const { data } = await supabase
+      .from("profiles")
+      .select("preferred_language")
+      .eq("id", user.id)
+      .maybeSingle();
+    return data?.preferred_language === "ar" ? "ar" : "en";
+  } catch {
+    return "en";
+  }
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const lang = await resolveLang();
+  const dir = lang === "ar" ? "rtl" : "ltr";
   return (
-    <html lang="en" className="dark">
+    <html lang={lang} dir={dir} className="dark">
       <head>
         {/* Design system typefaces — Manrope (headlines) + Inter (body) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

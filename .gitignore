@@ -22,6 +22,10 @@
 .DS_Store
 *.pem
 
+# Local-only presentation deck builder (Node scripts + screenshot assets);
+# the deck is regenerated from the LaTeX doc and not part of the Next.js app.
+/.build-deck/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

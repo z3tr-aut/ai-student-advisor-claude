@@ -37,9 +37,17 @@ function formatAcademicRecord(p: StudentAcademicProfile): string {
   return lines.join("\n");
 }
 
-function buildSystemPrompt(profile: Profile | null, academic: StudentAcademicProfile | null): string {
+function buildSystemPrompt(
+  profile: Profile | null,
+  academic: StudentAcademicProfile | null,
+  preferredLanguage: "en" | "ar" = "en",
+): string {
+  const languageRule =
+    preferredLanguage === "ar"
+      ? "The student's interface language is set to Arabic. ALWAYS reply in Arabic unless the student explicitly writes their message in English, in which case reply in English."
+      : "Match the student's language (Arabic or English). If the student writes Arabic, reply in Arabic; if English, reply in English.";
   const parts: string[] = [
-    "You are an academic advisor chatting with a student at Aqaba University of Technology. Talk like a friendly tutor, not a formal report. Match the student's language (Arabic or English).",
+    `You are an academic advisor chatting with a student at Aqaba University of Technology. Talk like a friendly tutor, not a formal report. ${languageRule}`,
     "Tone: casual, short, direct. Plain prose. Treat it like texting a friend who happens to be smart — answer the question and stop.",
     "Formatting rules — strictly follow:",
     "  - The chat renders as plain text. Do NOT use markdown: no asterisks, no **bold**, no #headings, no backticks, no `*` or `-` bullet lines for emphasis. The user literally sees the asterisks.",
@@ -102,6 +110,20 @@ export async function POST(req: Request) {
   const { messages, profile } = body;
   let { sessionId } = body;
 
+  // Resolve the user's interface-language preference (drives the advisor's reply
+  // language). Fetched server-side so the client cannot spoof it.
+  let preferredLanguage: "en" | "ar" = "en";
+  try {
+    const { data: prefRow } = await supabase
+      .from("profiles")
+      .select("preferred_language")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (prefRow?.preferred_language === "ar") preferredLanguage = "ar";
+  } catch {
+    // column may not exist yet pre-migration — fall back to English silently
+  }
+
   if (!Array.isArray(messages) || messages.length === 0) {
     return NextResponse.json({ error: "No messages provided" }, { status: 400 });
   }
@@ -159,7 +181,7 @@ export async function POST(req: Request) {
   const academic = fixtureStdId !== undefined ? buildStudentProfile(fixtureStdId) : null;
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const systemPrompt = buildSystemPrompt(profile, academic);
+  const systemPrompt = buildSystemPrompt(profile, academic, preferredLanguage);
   const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
   const geminiModel = genAI.getGenerativeModel({

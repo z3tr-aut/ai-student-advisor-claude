@@ -13,6 +13,7 @@ type ProfileData = {
   skills: string[];
   preferred_countries: string[];
   grades: Record<string, unknown>;
+  preferred_language: "en" | "ar";
 };
 
 const EDUCATION_LEVELS = [
@@ -102,6 +103,7 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
         skills: form.skills,
         preferred_countries: form.preferred_countries,
         grades,
+        preferred_language: form.preferred_language,
       })
       .eq("id", user.id);
 
@@ -116,6 +118,14 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
 
   return (
     <form onSubmit={handleSave} className="flex flex-col gap-6">
+      {/* Interface language */}
+      <Section title="Interface language" icon="translate">
+        <LanguageToggle
+          value={form.preferred_language}
+          onChange={(v) => setForm({ ...form, preferred_language: v })}
+        />
+      </Section>
+
       {/* Identity */}
       <Section title="Identity" icon="person">
         <TextField
@@ -221,6 +231,48 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
 }
 
 /* ─── building blocks ─── */
+
+function LanguageToggle({
+  value,
+  onChange,
+}: {
+  value: "en" | "ar";
+  onChange: (v: "en" | "ar") => void;
+}) {
+  const options: { value: "en" | "ar"; label: string; hint: string }[] = [
+    { value: "en", label: "English", hint: "LTR · default" },
+    { value: "ar", label: "العربية", hint: "RTL · يرد المساعد بالعربية" },
+  ];
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="block font-body text-label-lg text-on-surface-variant">
+        Sets the interface direction and the language the advisor replies in.
+      </span>
+      <div className="flex gap-2">
+        {options.map((opt) => {
+          const active = value === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(opt.value)}
+              className={[
+                "flex-1 flex flex-col items-start gap-1 px-4 py-3 rounded-lg transition-all text-left",
+                active
+                  ? "bg-primary/25 text-on-surface ring-1 ring-primary shadow-glow"
+                  : "bg-surface-container hover:bg-surface-container-high text-on-surface-variant",
+              ].join(" ")}
+              aria-pressed={active}
+            >
+              <span className="font-headline text-title-md">{opt.label}</span>
+              <span className="text-label-md opacity-80">{opt.hint}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function Section({
   title,
