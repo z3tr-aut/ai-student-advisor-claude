@@ -207,16 +207,39 @@ export async function POST(req: Request) {
       try {
         const chat = geminiModel.startChat({ history });
 
+        // The SDK's response.text() / response.functionCalls() THROW when the
+        // candidate finished with no usable content (MALFORMED_FUNCTION_CALL,
+        // SAFETY, RECITATION, MAX_TOKENS, OTHER). Heavier "preferable schedule"
+        // requests trigger that often. Never let it crash the stream.
+        const safeText = (r: { text: () => string }): string => {
+          try {
+            return r.text() ?? "";
+          } catch {
+            return "";
+          }
+        };
+
         // Tool-calling loop: keep feeding function responses back until the model stops asking.
         let nextMessage: string | Array<{ functionResponse: { name: string; response: Record<string, unknown> } }> =
           latestUserMsg.content;
+        let finishReason: string | undefined;
         for (let turn = 0; turn < 4; turn++) {
           const result = await chat.sendMessage(nextMessage as string); // (also accepts parts[])
           const response = result.response;
-          const calls = response.functionCalls?.() ?? [];
+          finishReason = response.candidates?.[0]?.finishReason as string | undefined;
+
+          let calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+          try {
+            calls = (response.functionCalls?.() ?? []) as Array<{
+              name: string;
+              args: Record<string, unknown>;
+            }>;
+          } catch {
+            calls = [];
+          }
 
           if (calls.length === 0) {
-            const text = response.text();
+            const text = safeText(response);
             if (text) {
               fullText += text;
               controller.enqueue(encoder.encode(text));
@@ -238,6 +261,23 @@ export async function POST(req: Request) {
             })
           );
           nextMessage = responses as unknown as string;
+        }
+
+        // The model produced no usable text — it returned a malformed/empty
+        // turn, was cut off, or kept calling tools past the cap. Degrade
+        // gracefully with a recoverable message instead of throwing the
+        // generic error. The tools already ran, so a rephrase will work.
+        if (!fullText.trim()) {
+          console.warn(
+            "[/api/chat] no assistant text; finishReason=",
+            finishReason,
+            "tools=",
+            toolTraces.map((t) => t.tool),
+          );
+          const fallback =
+            "I couldn't put that together just now. Try rephrasing — for example: \"build a 15-credit schedule with no Thursday classes and nothing before 9 AM.\"";
+          fullText = fallback;
+          controller.enqueue(encoder.encode(fallback));
         }
 
         if (fullText.trim()) {
