@@ -94,5 +94,29 @@
     "day": "Wednesday",
     "start_time": "11:00:00",
     "end_time": "12:00:00"
+  },
+  {
+    "time_id": 17,
+    "day": "Thursday",
+    "start_time": "08:00:00",
+    "end_time": "09:00:00"
+  },
+  {
+    "time_id": 18,
+    "day": "Thursday",
+    "start_time": "09:00:00",
+    "end_time": "10:00:00"
+  },
+  {
+    "time_id": 19,
+    "day": "Thursday",
+    "start_time": "10:00:00",
+    "end_time": "11:00:00"
+  },
+  {
+    "time_id": 20,
+    "day": "Thursday",
+    "start_time": "11:00:00",
+    "end_time": "12:00:00"
   }
 ]

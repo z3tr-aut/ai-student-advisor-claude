@@ -418,5 +418,75 @@
     "major_name": "AI",
     "prereq_id": null,
     "course_name_ar": "مشروع تخرج الذكاء الاصطناعي"
+  },
+  {
+    "course_id": 43,
+    "course_name": "Human-Computer Interaction",
+    "credit_hours": 3,
+    "course_type": "Lecture",
+    "major_id": 2,
+    "major_name": "SE",
+    "prereq_id": null,
+    "course_name_ar": "تفاعل الإنسان والحاسوب"
+  },
+  {
+    "course_id": 44,
+    "course_name": "Agile Software Methods",
+    "credit_hours": 3,
+    "course_type": "Lecture",
+    "major_id": 2,
+    "major_name": "SE",
+    "prereq_id": null,
+    "course_name_ar": "منهجيات أجايل"
+  },
+  {
+    "course_id": 45,
+    "course_name": "Cloud Computing",
+    "credit_hours": 3,
+    "course_type": "Lecture",
+    "major_id": 2,
+    "major_name": "SE",
+    "prereq_id": null,
+    "course_name_ar": "الحوسبة السحابية"
+  },
+  {
+    "course_id": 46,
+    "course_name": "IT Project Lab",
+    "credit_hours": 3,
+    "course_type": "Lecture",
+    "major_id": 2,
+    "major_name": "SE",
+    "prereq_id": null,
+    "course_name_ar": "مختبر مشروع تقني"
+  },
+  {
+    "course_id": 49,
+    "course_name": "Requirements Engineering Lab",
+    "credit_hours": 3,
+    "course_type": "Lecture",
+    "major_id": 2,
+    "major_name": "SE",
+    "prereq_id": null,
+    "course_name_ar": "مختبر هندسة المتطلبات"
+  },
+  {
+    "course_id": 47,
+    "course_name": "Security Operations",
+    "credit_hours": 3,
+    "course_type": "Lecture",
+    "major_id": 3,
+    "major_name": "CY",
+    "prereq_id": null,
+    "course_name_ar": "عمليات الأمن"
+  },
+  {
+    "course_id": 48,
+    "course_name": "Advanced Security Topics",
+    "credit_hours": 3,
+    "course_type": "Lecture",
+    "major_id": 3,
+    "major_name": "CY",
+    "prereq_id": null,
+    "course_name_ar": "مواضيع أمنية متقدمة"
   }
 ]

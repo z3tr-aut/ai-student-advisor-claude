@@ -127,8 +127,8 @@
     "course_id": 22,
     "course_name": "Software Testing",
     "semester_id": 1,
-    "grade": "B+",
-    "status": "passed",
+    "grade": "F",
+    "status": "failed",
     "section": "1"
   },
   {
@@ -154,36 +154,14 @@
     "section": "1"
   },
   {
-    "history_id": 15,
-    "std_id": 1003,
-    "student_name": "Student_3",
-    "course_id": 3,
-    "course_name": "Discrete Mathematics",
-    "semester_id": 1,
-    "grade": "B+",
-    "status": "passed",
-    "section": "1"
-  },
-  {
-    "history_id": 16,
-    "std_id": 1003,
-    "student_name": "Student_3",
-    "course_id": 4,
-    "course_name": "Introduction to Cyber Security",
-    "semester_id": 1,
-    "grade": "A-",
-    "status": "passed",
-    "section": "1"
-  },
-  {
     "history_id": 17,
     "std_id": 1003,
     "student_name": "Student_3",
     "course_id": 5,
     "course_name": "Data Structures",
     "semester_id": 1,
-    "grade": "B",
-    "status": "passed",
+    "grade": "F",
+    "status": "failed",
     "section": "1"
   },
   {
@@ -29587,6 +29565,50 @@
     "semester_id": 1,
     "grade": "B",
     "status": "passed",
+    "section": "1"
+  },
+  {
+    "history_id": 2691,
+    "std_id": 1001,
+    "student_name": "Student_1",
+    "course_id": 41,
+    "course_name": "Technical Writing",
+    "semester_id": 2,
+    "grade": "",
+    "status": "enrolled",
+    "section": "1"
+  },
+  {
+    "history_id": 2692,
+    "std_id": 1001,
+    "student_name": "Student_1",
+    "course_id": 34,
+    "course_name": "Computer Vision",
+    "semester_id": 1,
+    "grade": "F",
+    "status": "failed",
+    "section": "1"
+  },
+  {
+    "history_id": 2693,
+    "std_id": 1002,
+    "student_name": "Student_2",
+    "course_id": 27,
+    "course_name": "Software Project Management",
+    "semester_id": 2,
+    "grade": "",
+    "status": "enrolled",
+    "section": "1"
+  },
+  {
+    "history_id": 2694,
+    "std_id": 1003,
+    "student_name": "Student_3",
+    "course_id": 6,
+    "course_name": "Computer Organization",
+    "semester_id": 2,
+    "grade": "",
+    "status": "enrolled",
     "section": "1"
   }
 ]
