@@ -185,12 +185,6 @@ export async function POST(req: Request) {
   const systemPrompt = buildSystemPrompt(profile, academic, preferredLanguage);
   const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-  const geminiModel = genAI.getGenerativeModel({
-    model: modelName,
-    systemInstruction: systemPrompt,
-    tools: [{ functionDeclarations: advisorTools }],
-  });
-
   const history: Content[] = messages
     .slice(0, -1)
     .filter((m) => m.content && m.content.trim().length > 0)
@@ -205,12 +199,9 @@ export async function POST(req: Request) {
       let fullText = "";
       const toolTraces: Array<{ tool: string; args: unknown; result: unknown }> = [];
       try {
-        const chat = geminiModel.startChat({ history });
-
         // The SDK's response.text() / response.functionCalls() THROW when the
         // candidate finished with no usable content (MALFORMED_FUNCTION_CALL,
-        // SAFETY, RECITATION, MAX_TOKENS, OTHER). Heavier "preferable schedule"
-        // requests trigger that often. Never let it crash the stream.
+        // SAFETY, RECITATION, MAX_TOKENS, OTHER). Never let it crash the stream.
         const safeText = (r: { text: () => string }): string => {
           try {
             return r.text() ?? "";
@@ -219,64 +210,110 @@ export async function POST(req: Request) {
           }
         };
 
-        // Tool-calling loop: keep feeding function responses back until the model stops asking.
-        let nextMessage: string | Array<{ functionResponse: { name: string; response: Record<string, unknown> } }> =
-          latestUserMsg.content;
-        let finishReason: string | undefined;
-        for (let turn = 0; turn < 4; turn++) {
-          // Gemini's sendMessage can reject (API error / function-response
-          // rejected / overloaded). Never let it fall through to the generic
-          // hard error — break and let the graceful fallback below handle it.
-          let response;
-          try {
-            const result = await chat.sendMessage(nextMessage as string); // (also accepts parts[])
-            response = result.response;
-          } catch (e) {
-            console.error(`[/api/chat] sendMessage failed (turn ${turn}):`, e);
-            break;
-          }
-          finishReason = response.candidates?.[0]?.finishReason as string | undefined;
+        type ChatSession = ReturnType<ReturnType<typeof genAI.getGenerativeModel>["startChat"]>;
 
-          let calls: Array<{ name: string; args: Record<string, unknown> }> = [];
-          try {
-            calls = (response.functionCalls?.() ?? []) as Array<{
-              name: string;
-              args: Record<string, unknown>;
-            }>;
-          } catch {
-            calls = [];
-          }
-
-          if (calls.length === 0) {
-            const text = safeText(response);
-            if (text) {
-              fullText += text;
-              controller.enqueue(encoder.encode(text));
+        // Retry one send a few times — gemini-2.5-flash frequently returns
+        // transient 5xx / "overloaded" under load.
+        const sendWithRetry = async (c: ChatSession, msg: string) => {
+          let lastErr: unknown;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              return await c.sendMessage(msg);
+            } catch (e) {
+              lastErr = e;
+              await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
             }
-            break;
+          }
+          throw lastErr;
+        };
+
+        // Cascade across function-calling-capable models so one model's
+        // outage/quota doesn't break the advisor. Each model gets a fresh
+        // chat replayed from the same history + user message.
+        const MODELS = [...new Set([modelName, "gemini-2.0-flash", "gemini-1.5-flash"])];
+        let finishReason: string | undefined;
+
+        for (const m of MODELS) {
+          if (fullText.trim()) break; // an earlier model already answered
+
+          let chat: ChatSession;
+          try {
+            chat = genAI
+              .getGenerativeModel({
+                model: m,
+                systemInstruction: systemPrompt,
+                tools: [{ functionDeclarations: advisorTools }],
+              })
+              .startChat({ history });
+          } catch (e) {
+            console.error(`[/api/chat] model init failed (${m}):`, e);
+            continue;
           }
 
-          // Run all calls, collect the function responses. A tool throwing
-          // must not crash the stream either.
-          let responses;
-          try {
-            responses = await Promise.all(
-              calls.map(async (call) => {
-                const payload = await runAdvisorTool(call.name, call.args as Record<string, unknown>, supabase, user);
-                toolTraces.push({ tool: call.name, args: call.args, result: payload });
-                return {
-                  functionResponse: {
-                    name: call.name,
-                    response: payload,
-                  },
-                };
-              })
-            );
-          } catch (e) {
-            console.error("[/api/chat] tool execution failed:", e);
-            break;
+          let nextMessage: string | Array<{ functionResponse: { name: string; response: Record<string, unknown> } }> =
+            latestUserMsg.content;
+          let streamed = false;
+          let modelFailed = false;
+
+          for (let turn = 0; turn < 4; turn++) {
+            let response;
+            try {
+              const result = await sendWithRetry(chat, nextMessage as string);
+              response = result.response;
+            } catch (e) {
+              console.error(`[/api/chat] sendMessage failed (model=${m} turn=${turn}):`, e);
+              modelFailed = true;
+              break;
+            }
+            finishReason = response.candidates?.[0]?.finishReason as string | undefined;
+
+            let calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+            try {
+              calls = (response.functionCalls?.() ?? []) as Array<{
+                name: string;
+                args: Record<string, unknown>;
+              }>;
+            } catch {
+              calls = [];
+            }
+
+            if (calls.length === 0) {
+              const text = safeText(response);
+              if (text) {
+                fullText += text;
+                streamed = true;
+                controller.enqueue(encoder.encode(text));
+              }
+              break;
+            }
+
+            let responses;
+            try {
+              responses = await Promise.all(
+                calls.map(async (call) => {
+                  const payload = await runAdvisorTool(call.name, call.args as Record<string, unknown>, supabase, user);
+                  toolTraces.push({ tool: call.name, args: call.args, result: payload });
+                  return {
+                    functionResponse: {
+                      name: call.name,
+                      response: payload,
+                    },
+                  };
+                })
+              );
+            } catch (e) {
+              console.error("[/api/chat] tool execution failed:", e);
+              modelFailed = true;
+              break;
+            }
+            nextMessage = responses as unknown as string;
           }
-          nextMessage = responses as unknown as string;
+
+          // Keep streamed output (don't cascade and duplicate). Only try the
+          // next model if this one failed before producing anything.
+          if (streamed || fullText.trim()) break;
+          if (modelFailed) continue;
+          break;
         }
 
         // The model produced no usable text — it returned a malformed/empty
