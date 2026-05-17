@@ -224,8 +224,17 @@ export async function POST(req: Request) {
           latestUserMsg.content;
         let finishReason: string | undefined;
         for (let turn = 0; turn < 4; turn++) {
-          const result = await chat.sendMessage(nextMessage as string); // (also accepts parts[])
-          const response = result.response;
+          // Gemini's sendMessage can reject (API error / function-response
+          // rejected / overloaded). Never let it fall through to the generic
+          // hard error — break and let the graceful fallback below handle it.
+          let response;
+          try {
+            const result = await chat.sendMessage(nextMessage as string); // (also accepts parts[])
+            response = result.response;
+          } catch (e) {
+            console.error(`[/api/chat] sendMessage failed (turn ${turn}):`, e);
+            break;
+          }
           finishReason = response.candidates?.[0]?.finishReason as string | undefined;
 
           let calls: Array<{ name: string; args: Record<string, unknown> }> = [];
@@ -247,19 +256,26 @@ export async function POST(req: Request) {
             break;
           }
 
-          // Run all calls, collect the function responses
-          const responses = await Promise.all(
-            calls.map(async (call) => {
-              const payload = await runAdvisorTool(call.name, call.args as Record<string, unknown>, supabase, user);
-              toolTraces.push({ tool: call.name, args: call.args, result: payload });
-              return {
-                functionResponse: {
-                  name: call.name,
-                  response: payload,
-                },
-              };
-            })
-          );
+          // Run all calls, collect the function responses. A tool throwing
+          // must not crash the stream either.
+          let responses;
+          try {
+            responses = await Promise.all(
+              calls.map(async (call) => {
+                const payload = await runAdvisorTool(call.name, call.args as Record<string, unknown>, supabase, user);
+                toolTraces.push({ tool: call.name, args: call.args, result: payload });
+                return {
+                  functionResponse: {
+                    name: call.name,
+                    response: payload,
+                  },
+                };
+              })
+            );
+          } catch (e) {
+            console.error("[/api/chat] tool execution failed:", e);
+            break;
+          }
           nextMessage = responses as unknown as string;
         }
 

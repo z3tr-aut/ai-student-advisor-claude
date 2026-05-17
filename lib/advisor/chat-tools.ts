@@ -139,25 +139,9 @@ export async function runAdvisorTool(
       preferences: { earliestStart, latestEnd, excludedDays },
     });
 
-    // Snapshot the latest build so the My Schedule page mirrors what the
-    // advisor just built (15 vs 18, with/without time prefs). Best-effort:
-    // a failed write must never break the chat stream. Overwrites a single
-    // row and does not change eligibility — rebuilding stays idempotent.
-    try {
-      await supabase
-        .from("profiles")
-        .update({
-          last_schedule: {
-            targetCredits: target,
-            preferences: { earliestStart, latestEnd, excludedDays },
-            result,
-          },
-        })
-        .eq("id", user.id);
-    } catch {
-      // ignore — the snapshot is a convenience, not required for the reply
-    }
-
+    // NOTE: the My-Schedule snapshot is written AFTER the stream in the chat
+    // route (from the tool trace), not here — keeping this tool path free of
+    // extra I/O so a slow/failed write can never affect the model turn.
     return serializeFixtureScheduleResult(scenario, result);
   }
 
