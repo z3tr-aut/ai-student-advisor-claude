@@ -327,10 +327,74 @@ export async function POST(req: Request) {
             "tools=",
             toolTraces.map((t) => t.tool),
           );
-          const fallback =
+
+          // Gemini gave no text (commonly quota/overload). The tools already
+          // ran — render their result deterministically so schedules and
+          // recommendations still work with zero Gemini text capacity.
+          const reasonText: Record<string, string> = {
+            "no-section": "no section offered this term",
+            "out-of-window": "no section fits your time preferences",
+            "all-conflict": "every section clashes with another pick",
+          };
+          const asStr = (v: unknown) => (typeof v === "string" ? v : undefined);
+          const asNum = (v: unknown) => (typeof v === "number" ? v : undefined);
+          const lastResult = (name: string) =>
+            [...toolTraces].reverse().find((t) => t.tool === name)?.result as
+              | Record<string, unknown>
+              | undefined;
+
+          const renderTrace = (): string | null => {
+            const sched = lastResult("build_schedule");
+            if (sched && Array.isArray(sched.picks)) {
+              const tc = asNum(sched.total_credits);
+              const lines: string[] = [
+                `Here's your schedule${tc !== undefined ? ` (${tc} credit hours)` : ""}:`,
+              ];
+              for (const p of sched.picks as Array<Record<string, unknown>>) {
+                const nm = asStr(p.course_name) ?? "Course";
+                const day = asStr(p.day) ?? "";
+                const s = asStr(p.start_time) ?? "";
+                const e = asStr(p.end_time) ?? "";
+                lines.push(`• ${nm} — ${day} ${s}–${e}`.trimEnd());
+              }
+              const un = Array.isArray(sched.unscheduled)
+                ? (sched.unscheduled as Array<Record<string, unknown>>)
+                : [];
+              if (un.length) {
+                lines.push("", "Couldn't place:");
+                for (const u of un) {
+                  const nm = asStr(u.course_name) ?? "Course";
+                  const r = asStr(u.reason) ?? "";
+                  lines.push(`• ${nm} — ${reasonText[r] ?? r}`);
+                }
+              }
+              const warns = Array.isArray(sched.warnings) ? (sched.warnings as unknown[]) : [];
+              for (const w of warns) if (asStr(w)) lines.push(`Note: ${asStr(w)}`);
+              return lines.join("\n");
+            }
+
+            const rec = lastResult("recommend_courses");
+            if (rec && Array.isArray(rec.picks)) {
+              const tc = asNum(rec.target_credits);
+              const lines: string[] = [
+                `Recommended courses${tc !== undefined ? ` (${tc} credit hours)` : ""}:`,
+              ];
+              for (const p of rec.picks as Array<Record<string, unknown>>) {
+                const nm = asStr(p.course_name) ?? "Course";
+                const cr = asNum(p.credits);
+                lines.push(`• ${nm}${cr !== undefined ? ` (${cr} cr)` : ""}`);
+              }
+              const warns = Array.isArray(rec.warnings) ? (rec.warnings as unknown[]) : [];
+              for (const w of warns) if (asStr(w)) lines.push(`Note: ${asStr(w)}`);
+              return lines.join("\n");
+            }
+            return null;
+          };
+
+          fullText =
+            renderTrace() ??
             "I couldn't put that together just now. Try rephrasing — for example: \"build a 15-credit schedule with no Thursday classes and nothing before 9 AM.\"";
-          fullText = fallback;
-          controller.enqueue(encoder.encode(fallback));
+          controller.enqueue(encoder.encode(fullText));
         }
 
         if (fullText.trim()) {
