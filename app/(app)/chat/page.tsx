@@ -11,18 +11,36 @@ export default async function ChatPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Load existing session if ?session=<id>
+  // Resume a conversation unless the user explicitly asked for a new one.
+  // - ?session=<id>  → that session
+  // - (no params)    → the user's most recent session (so navigating away from
+  //                     Chat Home and back doesn't lose the conversation)
+  // - ?new=1         → start blank
   let initialMessages: { role: "user" | "assistant"; content: string }[] = [];
   let sessionId: string | null = null;
   let sessionTitle: string | null = null;
 
-  if (searchParams.session && !searchParams.new) {
-    const { data: session } = await supabase
-      .from("chat_sessions")
-      .select("id, title")
-      .eq("id", searchParams.session)
-      .eq("user_id", user!.id)
-      .single();
+  if (!searchParams.new) {
+    let session: { id: string; title: string | null } | null = null;
+
+    if (searchParams.session) {
+      const { data } = await supabase
+        .from("chat_sessions")
+        .select("id, title")
+        .eq("id", searchParams.session)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      session = data ?? null;
+    } else {
+      const { data } = await supabase
+        .from("chat_sessions")
+        .select("id, title")
+        .eq("user_id", user!.id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      session = data ?? null;
+    }
 
     if (session) {
       sessionId = session.id;

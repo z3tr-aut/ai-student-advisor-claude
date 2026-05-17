@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getStudentContext } from "@/lib/advisor/select";
-import { recommendSchedule } from "@/lib/advisor/schedule";
+import { recommendSchedule, type ScheduleResult } from "@/lib/advisor/schedule";
 import { buildStudentScenario } from "@/lib/advisor/fixtures";
 import MyScheduleClient from "./MyScheduleClient";
 
@@ -15,7 +15,7 @@ export default async function SchedulePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("std_id")
+    .select("std_id, last_schedule")
     .eq("id", user!.id)
     .maybeSingle();
 
@@ -24,22 +24,35 @@ export default async function SchedulePage() {
   const student = await getStudentContext(supabase, user!.id);
   if (!student) redirect("/onboarding");
 
-  // Sections aren't seeded into the DB yet, so we drive the timetable from the
-  // same fixture data the chat tool uses. The std_id we resolved from auth is
-  // the lookup key into the fixture (test students 1001/1002/1003 are wired
-  // up; other students fall through to an empty schedule).
-  const scenario = buildStudentScenario(student.std_id);
-  const result = recommendSchedule({
-    plan: scenario.courses,
-    sections: scenario.sections,
-    history: scenario.history,
-    targetCredits: DEFAULT_TARGET_CREDITS,
-  });
+  // Prefer the snapshot the chat tool wrote on the last build_schedule call so
+  // this page mirrors exactly what the advisor just built (e.g. 18 credits,
+  // "no Thursday"). Fall back to a fresh default compute for users who haven't
+  // built a schedule yet. Sections aren't seeded into the DB, so the fallback
+  // is driven by the same fixture data the chat tool uses.
+  const snapshot = profile.last_schedule as
+    | { targetCredits?: number; result?: ScheduleResult }
+    | null;
+
+  let targetCredits = DEFAULT_TARGET_CREDITS;
+  let result: ScheduleResult;
+
+  if (snapshot?.result) {
+    targetCredits = snapshot.targetCredits ?? DEFAULT_TARGET_CREDITS;
+    result = snapshot.result;
+  } else {
+    const scenario = buildStudentScenario(student.std_id);
+    result = recommendSchedule({
+      plan: scenario.courses,
+      sections: scenario.sections,
+      history: scenario.history,
+      targetCredits: DEFAULT_TARGET_CREDITS,
+    });
+  }
 
   return (
     <MyScheduleClient
       student={student}
-      targetCredits={DEFAULT_TARGET_CREDITS}
+      targetCredits={targetCredits}
       result={result}
     />
   );
