@@ -37,13 +37,6 @@ export default async function CoursesPage() {
     .select("course_id, status, grade, semester_id")
     .eq("std_id", std.std_id);
 
-  // Fetch current/past semesters for the dropdown
-  const { data: semesters } = await supabase
-    .from("semester")
-    .select("semester_id, name, status")
-    .order("semester_id", { ascending: false })
-    .limit(10);
-
   const lang = await resolveServerLang();
   const t = (k: string) => translate(lang, k);
 
@@ -59,10 +52,8 @@ export default async function CoursesPage() {
         {t("courses.subheading")}
       </p>
       <CoursesClient
-        stdId={std.std_id}
         courses={courses ?? []}
         history={history ?? []}
-        semesters={semesters ?? []}
       />
     </div>
   );

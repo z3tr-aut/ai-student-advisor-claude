@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 type DBCourse = {
   course_id: string;
@@ -16,15 +15,6 @@ type HistoryRow = {
   grade: number | null;
   semester_id: string | null;
 };
-type Semester = { semester_id: string; name: string; status: string };
-
-const STATUS_OPTIONS = [
-  { value: "", label: "—" },
-  { value: "passed", label: "Passed" },
-  { value: "enrolled", label: "Enrolled" },
-  { value: "failed", label: "Failed" },
-  { value: "withdrawn", label: "Withdrawn" },
-];
 
 const STATUS_BADGE: Record<string, string> = {
   passed: "bg-green-100 text-green-800 border-green-200",
@@ -33,16 +23,19 @@ const STATUS_BADGE: Record<string, string> = {
   withdrawn: "bg-gray-100 text-gray-600 border-gray-200",
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  passed: "Passed",
+  enrolled: "Enrolled",
+  failed: "Failed",
+  withdrawn: "Withdrawn",
+};
+
 export default function CoursesClient({
-  stdId,
   courses,
   history,
-  semesters,
 }: {
-  stdId: string;
   courses: DBCourse[];
   history: HistoryRow[];
-  semesters: Semester[];
 }) {
   const historyMap = useMemo(() => {
     const m = new Map<string, HistoryRow>();
@@ -50,82 +43,19 @@ export default function CoursesClient({
     return m;
   }, [history]);
 
-  const [overrides, setOverrides] = useState<
-    Map<string, { status: string; grade: string; semesterId: string }>
-  >(new Map());
-  const [saving, setSaving] = useState<Set<string>>(new Set());
-  const [saved, setSaved] = useState<Set<string>>(new Set());
-  const [errors, setErrors] = useState<Map<string, string>>(new Map());
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
 
-  function getOverride(id: string) {
-    return (
-      overrides.get(id) ?? {
-        status: historyMap.get(id)?.status ?? "",
-        grade: historyMap.get(id)?.grade?.toString() ?? "",
-        semesterId: historyMap.get(id)?.semester_id ?? "",
-      }
-    );
-  }
-
-  function updateOverride(
-    id: string,
-    patch: Partial<{ status: string; grade: string; semesterId: string }>
-  ) {
-    setOverrides((prev) => {
-      const next = new Map(prev);
-      next.set(id, { ...getOverride(id), ...patch });
-      return next;
-    });
-    setSaved((s) => { const n = new Set(s); n.delete(id); return n; });
-  }
-
-  async function save(courseId: string) {
-    const ov = getOverride(courseId);
-    if (!ov.status) {
-      // Delete record
-      const supabase = createClient();
-      setSaving((s) => new Set(s).add(courseId));
-      await supabase
-        .from("std_course")
-        .delete()
-        .eq("std_id", stdId)
-        .eq("course_id", courseId);
-      setSaving((s) => { const n = new Set(s); n.delete(courseId); return n; });
-      setSaved((s) => new Set(s).add(courseId));
-      return;
-    }
-    const supabase = createClient();
-    setSaving((s) => new Set(s).add(courseId));
-    const payload = {
-      std_id: stdId,
-      course_id: courseId,
-      status: ov.status,
-      grade: ov.grade ? parseFloat(ov.grade) : null,
-      semester_id: ov.semesterId || null,
-    };
-    const { error } = await supabase
-      .from("std_course")
-      .upsert(payload, { onConflict: "std_id,course_id" });
-    if (error) {
-      setErrors((prev) => new Map(prev).set(courseId, error.message));
-    } else {
-      setSaved((s) => new Set(s).add(courseId));
-    }
-    setSaving((s) => { const n = new Set(s); n.delete(courseId); return n; });
-  }
-
   const filtered = useMemo(() => {
     return courses.filter((c) => {
-      const status = historyMap.get(c.course_id)?.status ?? overrides.get(c.course_id)?.status ?? "";
+      const status = historyMap.get(c.course_id)?.status ?? "";
       if (filter === "passed" && status !== "passed") return false;
       if (filter === "enrolled" && status !== "enrolled") return false;
       if (filter === "none" && status !== "") return false;
       if (search && !c.course_na.includes(search) && !c.course_id.includes(search)) return false;
       return true;
     });
-  }, [courses, historyMap, overrides, filter, search]);
+  }, [courses, historyMap, filter, search]);
 
   const statSummary = useMemo(() => {
     let passed = 0, enrolled = 0, none = 0;
@@ -186,11 +116,9 @@ export default function CoursesClient({
           </p>
         )}
         {filtered.map((c) => {
-          const ov = getOverride(c.course_id);
-          const isSaving = saving.has(c.course_id);
-          const isSaved = saved.has(c.course_id);
-          const errMsg = errors.get(c.course_id);
-          const badge = ov.status ? STATUS_BADGE[ov.status] : undefined;
+          const row = historyMap.get(c.course_id);
+          const status = row?.status ?? "";
+          const badge = status ? STATUS_BADGE[status] : undefined;
 
           return (
             <div
@@ -208,61 +136,21 @@ export default function CoursesClient({
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Status badge / selector */}
-                <select
-                  value={ov.status}
-                  onChange={(e) => updateOverride(c.course_id, { status: e.target.value })}
-                  className={`text-xs font-semibold border rounded-full px-3 py-1 bg-transparent cursor-pointer transition-all ${
-                    badge ?? "border-outline-variant text-on-surface-variant"
-                  }`}
-                >
-                  {STATUS_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Grade (only if passed/failed) */}
-                {(ov.status === "passed" || ov.status === "failed") && (
-                  <input
-                    type="number"
-                    placeholder="Grade"
-                    min={0}
-                    max={100}
-                    value={ov.grade}
-                    onChange={(e) => updateOverride(c.course_id, { grade: e.target.value })}
-                    className="w-20 text-xs border border-outline-variant rounded-lg px-2 py-1"
-                  />
-                )}
-
-                {/* Semester selector */}
-                {semesters.length > 0 && ov.status && (
-                  <select
-                    value={ov.semesterId}
-                    onChange={(e) => updateOverride(c.course_id, { semesterId: e.target.value })}
-                    className="text-xs border border-outline-variant rounded-lg px-2 py-1 bg-transparent"
+                {status ? (
+                  <span
+                    className={`text-xs font-semibold border rounded-full px-3 py-1 ${
+                      badge ?? "border-outline-variant text-on-surface-variant"
+                    }`}
                   >
-                    <option value="">Semester…</option>
-                    {semesters.map((s) => (
-                      <option key={s.semester_id} value={s.semester_id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                    {STATUS_LABEL[status] ?? status}
+                    {row?.grade != null ? ` · ${row.grade}` : ""}
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold border border-outline-variant text-on-surface-variant rounded-full px-3 py-1">
+                    —
+                  </span>
                 )}
-
-                <button
-                  onClick={() => save(c.course_id)}
-                  disabled={isSaving}
-                  className="text-xs btn-secondary py-1 px-3"
-                >
-                  {isSaving ? "…" : isSaved ? "✓ Saved" : "Save"}
-                </button>
               </div>
-              {errMsg && (
-                <p className="font-body text-body-xs text-red-600 w-full">{errMsg}</p>
-              )}
             </div>
           );
         })}
