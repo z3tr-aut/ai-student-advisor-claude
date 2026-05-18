@@ -82,6 +82,151 @@ function buildSystemPrompt(
   return parts.join("\n\n");
 }
 
+// True for Gemini quota / rate-limit errors. Retrying or cascading to other
+// models on these is pointless — every gemini-* model shares the key's quota
+// and each extra call burns it ~30× faster.
+function isQuotaError(e: unknown): boolean {
+  const status = (e as { status?: number } | null | undefined)?.status;
+  if (status === 429) return true;
+  const msg = e instanceof Error ? e.message : String(e ?? "");
+  return /\b429\b|quota|rate.?limit|resource[_ ]?exhausted|too many requests/i.test(msg);
+}
+
+const DAY_WORDS: Record<string, string> = {
+  sunday: "Sunday",
+  monday: "Monday",
+  tuesday: "Tuesday",
+  wednesday: "Wednesday",
+  thursday: "Thursday",
+};
+
+function to24h(hourStr: string, minStr: string | undefined, ampm: string | undefined): string | undefined {
+  let h = parseInt(hourStr, 10);
+  if (Number.isNaN(h)) return undefined;
+  const ap = ampm?.toLowerCase();
+  if (ap === "pm" && h < 12) h += 12;
+  if (ap === "am" && h === 12) h = 0;
+  if (h < 0 || h > 23) return undefined;
+  const mm = minStr && /^\d{2}$/.test(minStr) ? minStr : "00";
+  return `${String(h).padStart(2, "0")}:${mm}`;
+}
+
+// Conservative server-side intent parser. Only fires on explicit schedule /
+// recommendation asks so normal conversation still goes to Gemini. Lets the
+// core demo run the deterministic engine with ZERO Gemini calls.
+function parseAdvisorIntent(
+  text: string,
+): { tool: "build_schedule" | "recommend_courses"; args: Record<string, unknown> } | null {
+  const t = text.toLowerCase();
+  const wantSchedule =
+    /\bschedule\b/.test(t) || /\btimetable\b/.test(t) || (/\bbuild\b/.test(t) && /\bplan\b/.test(t));
+  const wantRecommend =
+    /\brecommend/.test(t) ||
+    /what (can|should) i (take|register)/.test(t) ||
+    /which courses/.test(t) ||
+    /courses? (i can|to take|next semester|next term)/.test(t);
+  if (!wantSchedule && !wantRecommend) return null;
+
+  let target = 15;
+  const cm = t.match(/(\d{1,2})\s*(?:-|\s)?\s*(?:credit|cred|hour|hr|h)\b/);
+  if (cm) {
+    const n = parseInt(cm[1], 10);
+    if (n >= 1 && n <= 24) target = n;
+  }
+
+  if (wantSchedule) {
+    const args: Record<string, unknown> = { target_credits: target };
+    const excluded: string[] = [];
+    for (const [k, v] of Object.entries(DAY_WORDS)) {
+      if (new RegExp(`(no|not|without|skip|avoid|don'?t|free|off)\\b[^.]{0,20}\\b${k}\\b|\\b${k}\\b[^.]{0,12}\\b(off|free)\\b`).test(t)) {
+        excluded.push(v);
+      }
+    }
+    if (excluded.length) args.excluded_days = excluded;
+
+    const em = t.match(
+      /(?:after|from|start(?:ing)?\s*(?:at|from)?|not?\s*before|nothing\s*before|no\s*class(?:es)?\s*before)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/,
+    );
+    if (em) {
+      const v = to24h(em[1], em[2], em[3]);
+      if (v) args.earliest_start = v;
+    }
+    const lm = t.match(
+      /(?:no\s*class(?:es)?\s*after|nothing\s*after|end(?:ing)?\s*(?:by|before|at)|(?:before|by|until|till))\s*(\d{1,2})(?::(\d{2}))?\s*(pm)/,
+    );
+    if (lm) {
+      const v = to24h(lm[1], lm[2], lm[3]);
+      if (v) args.latest_end = v;
+    }
+    return { tool: "build_schedule", args };
+  }
+  return { tool: "recommend_courses", args: { target_credits: target } };
+}
+
+// Deterministic, Gemini-free renderer for a tool result. Shared by the
+// intent shortcut and the no-text fallback.
+function formatToolTrace(
+  toolTraces: Array<{ tool: string; args: unknown; result: unknown }>,
+): string | null {
+  const reasonText: Record<string, string> = {
+    "no-section": "no section offered this term",
+    "out-of-window": "no section fits your time preferences",
+    "all-conflict": "every section clashes with another pick",
+  };
+  const asStr = (v: unknown) => (typeof v === "string" ? v : undefined);
+  const asNum = (v: unknown) => (typeof v === "number" ? v : undefined);
+  const lastResult = (name: string) =>
+    [...toolTraces].reverse().find((t) => t.tool === name)?.result as
+      | Record<string, unknown>
+      | undefined;
+
+  const sched = lastResult("build_schedule");
+  if (sched && Array.isArray(sched.picks)) {
+    const tc = asNum(sched.total_credits);
+    const lines: string[] = [
+      `Here's your schedule${tc !== undefined ? ` (${tc} credit hours)` : ""}:`,
+    ];
+    for (const p of sched.picks as Array<Record<string, unknown>>) {
+      const nm = asStr(p.course_name) ?? "Course";
+      const day = asStr(p.day) ?? "";
+      const s = asStr(p.start_time) ?? "";
+      const e = asStr(p.end_time) ?? "";
+      lines.push(`• ${nm} — ${day} ${s}–${e}`.trimEnd());
+    }
+    const un = Array.isArray(sched.unscheduled)
+      ? (sched.unscheduled as Array<Record<string, unknown>>)
+      : [];
+    if (un.length) {
+      lines.push("", "Couldn't place:");
+      for (const u of un) {
+        const nm = asStr(u.course_name) ?? "Course";
+        const r = asStr(u.reason) ?? "";
+        lines.push(`• ${nm} — ${reasonText[r] ?? r}`);
+      }
+    }
+    const warns = Array.isArray(sched.warnings) ? (sched.warnings as unknown[]) : [];
+    for (const w of warns) if (asStr(w)) lines.push(`Note: ${asStr(w)}`);
+    return lines.join("\n");
+  }
+
+  const rec = lastResult("recommend_courses");
+  if (rec && Array.isArray(rec.picks)) {
+    const tc = asNum(rec.target_credits);
+    const lines: string[] = [
+      `Recommended courses${tc !== undefined ? ` (${tc} credit hours)` : ""}:`,
+    ];
+    for (const p of rec.picks as Array<Record<string, unknown>>) {
+      const nm = asStr(p.course_name) ?? "Course";
+      const cr = asNum(p.credits);
+      lines.push(`• ${nm}${cr !== undefined ? ` (${cr} cr)` : ""}`);
+    }
+    const warns = Array.isArray(rec.warnings) ? (rec.warnings as unknown[]) : [];
+    for (const w of warns) if (asStr(w)) lines.push(`Note: ${asStr(w)}`);
+    return lines.join("\n");
+  }
+  return null;
+}
+
 export async function POST(req: Request) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -199,6 +344,26 @@ export async function POST(req: Request) {
       let fullText = "";
       const toolTraces: Array<{ tool: string; args: unknown; result: unknown }> = [];
       try {
+        // Deterministic shortcut: explicit "build a schedule" / "recommend
+        // courses" asks run the engine directly with ZERO Gemini calls, so
+        // the core demo is quota-proof. Anything else still goes to Gemini.
+        if (fixtureStdId !== undefined) {
+          try {
+            const intent = parseAdvisorIntent(latestUserMsg.content);
+            if (intent) {
+              const payload = await runAdvisorTool(intent.tool, intent.args, supabase, user);
+              toolTraces.push({ tool: intent.tool, args: intent.args, result: payload });
+              const text = formatToolTrace(toolTraces);
+              if (text) {
+                fullText = text;
+                controller.enqueue(encoder.encode(text));
+              }
+            }
+          } catch (e) {
+            console.error("[/api/chat] deterministic shortcut failed:", e);
+          }
+        }
+
         // The SDK's response.text() / response.functionCalls() THROW when the
         // candidate finished with no usable content (MALFORMED_FUNCTION_CALL,
         // SAFETY, RECITATION, MAX_TOKENS, OTHER). Never let it crash the stream.
@@ -212,16 +377,17 @@ export async function POST(req: Request) {
 
         type ChatSession = ReturnType<ReturnType<typeof genAI.getGenerativeModel>["startChat"]>;
 
-        // Retry one send a few times — gemini-2.5-flash frequently returns
-        // transient 5xx / "overloaded" under load.
+        // Retry only transient 5xx/overloaded. NEVER retry quota/rate-limit —
+        // it's hopeless and burns the shared key quota faster.
         const sendWithRetry = async (c: ChatSession, msg: string) => {
           let lastErr: unknown;
-          for (let attempt = 0; attempt < 3; attempt++) {
+          for (let attempt = 0; attempt < 2; attempt++) {
             try {
               return await c.sendMessage(msg);
             } catch (e) {
               lastErr = e;
-              await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+              if (isQuotaError(e)) throw e;
+              await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
             }
           }
           throw lastErr;
@@ -232,6 +398,7 @@ export async function POST(req: Request) {
         // chat replayed from the same history + user message.
         const MODELS = [...new Set([modelName, "gemini-2.0-flash", "gemini-1.5-flash"])];
         let finishReason: string | undefined;
+        let quotaHit = false;
 
         for (const m of MODELS) {
           if (fullText.trim()) break; // an earlier model already answered
@@ -263,6 +430,7 @@ export async function POST(req: Request) {
             } catch (e) {
               console.error(`[/api/chat] sendMessage failed (model=${m} turn=${turn}):`, e);
               modelFailed = true;
+              if (isQuotaError(e)) quotaHit = true;
               break;
             }
             finishReason = response.candidates?.[0]?.finishReason as string | undefined;
@@ -309,9 +477,11 @@ export async function POST(req: Request) {
             nextMessage = responses as unknown as string;
           }
 
-          // Keep streamed output (don't cascade and duplicate). Only try the
-          // next model if this one failed before producing anything.
+          // Keep streamed output (don't cascade and duplicate). Don't cascade
+          // on quota — every gemini-* model shares the key's quota, so trying
+          // the next one just burns it faster. Only cascade on transient 5xx.
           if (streamed || fullText.trim()) break;
+          if (quotaHit) break;
           if (modelFailed) continue;
           break;
         }
@@ -328,71 +498,11 @@ export async function POST(req: Request) {
             toolTraces.map((t) => t.tool),
           );
 
-          // Gemini gave no text (commonly quota/overload). The tools already
-          // ran — render their result deterministically so schedules and
-          // recommendations still work with zero Gemini text capacity.
-          const reasonText: Record<string, string> = {
-            "no-section": "no section offered this term",
-            "out-of-window": "no section fits your time preferences",
-            "all-conflict": "every section clashes with another pick",
-          };
-          const asStr = (v: unknown) => (typeof v === "string" ? v : undefined);
-          const asNum = (v: unknown) => (typeof v === "number" ? v : undefined);
-          const lastResult = (name: string) =>
-            [...toolTraces].reverse().find((t) => t.tool === name)?.result as
-              | Record<string, unknown>
-              | undefined;
-
-          const renderTrace = (): string | null => {
-            const sched = lastResult("build_schedule");
-            if (sched && Array.isArray(sched.picks)) {
-              const tc = asNum(sched.total_credits);
-              const lines: string[] = [
-                `Here's your schedule${tc !== undefined ? ` (${tc} credit hours)` : ""}:`,
-              ];
-              for (const p of sched.picks as Array<Record<string, unknown>>) {
-                const nm = asStr(p.course_name) ?? "Course";
-                const day = asStr(p.day) ?? "";
-                const s = asStr(p.start_time) ?? "";
-                const e = asStr(p.end_time) ?? "";
-                lines.push(`• ${nm} — ${day} ${s}–${e}`.trimEnd());
-              }
-              const un = Array.isArray(sched.unscheduled)
-                ? (sched.unscheduled as Array<Record<string, unknown>>)
-                : [];
-              if (un.length) {
-                lines.push("", "Couldn't place:");
-                for (const u of un) {
-                  const nm = asStr(u.course_name) ?? "Course";
-                  const r = asStr(u.reason) ?? "";
-                  lines.push(`• ${nm} — ${reasonText[r] ?? r}`);
-                }
-              }
-              const warns = Array.isArray(sched.warnings) ? (sched.warnings as unknown[]) : [];
-              for (const w of warns) if (asStr(w)) lines.push(`Note: ${asStr(w)}`);
-              return lines.join("\n");
-            }
-
-            const rec = lastResult("recommend_courses");
-            if (rec && Array.isArray(rec.picks)) {
-              const tc = asNum(rec.target_credits);
-              const lines: string[] = [
-                `Recommended courses${tc !== undefined ? ` (${tc} credit hours)` : ""}:`,
-              ];
-              for (const p of rec.picks as Array<Record<string, unknown>>) {
-                const nm = asStr(p.course_name) ?? "Course";
-                const cr = asNum(p.credits);
-                lines.push(`• ${nm}${cr !== undefined ? ` (${cr} cr)` : ""}`);
-              }
-              const warns = Array.isArray(rec.warnings) ? (rec.warnings as unknown[]) : [];
-              for (const w of warns) if (asStr(w)) lines.push(`Note: ${asStr(w)}`);
-              return lines.join("\n");
-            }
-            return null;
-          };
-
+          // Gemini gave no text (commonly quota/overload). If a tool ran,
+          // render its result deterministically so schedules/recommendations
+          // still work with zero Gemini text capacity.
           fullText =
-            renderTrace() ??
+            formatToolTrace(toolTraces) ??
             "I couldn't put that together just now. Try rephrasing — for example: \"build a 15-credit schedule with no Thursday classes and nothing before 9 AM.\"";
           controller.enqueue(encoder.encode(fullText));
         }
