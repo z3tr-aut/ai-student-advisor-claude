@@ -58,6 +58,7 @@ function buildSystemPrompt(
     "  - recommend_courses — use for plain 'what can I take next semester' questions with no time preference.",
     "Default target_credits to 15 if the student didn't say.",
     "After a tool returns, talk through the result naturally. For build_schedule, list each pick on its own line as: course name, day, start-end time. Briefly mention warnings or unscheduled courses if any. If the tool returned an error, just explain it in one sentence.",
+    "There is also a save_recommendation tool. When the student explicitly asks you to save/keep/bookmark a suggestion you gave about their MAJOR, CAREER path, or UNIVERSITY choice, call save_recommendation with kind ('major' | 'career' | 'university'), a short title, and a 1-2 sentence summary of that advice, then confirm in one short sentence. Do not use it for course schedules.",
     `When you mention a course by name, use the field that matches the reply language: when replying in Arabic, use 'course_name_ar' from the tool response; when replying in English, use 'course_name'. The preferred reply language is ${preferredLanguage === "ar" ? "Arabic" : "English"}.`,
     "For non-scheduling questions, answer from your own knowledge using the academic record below if it's relevant.",
     "Never make up admission deadlines, tuition, rankings — say where to verify instead.",
@@ -161,6 +162,23 @@ function parseAdvisorIntent(
     return { tool: "build_schedule", args };
   }
   return { tool: "recommend_courses", args: { target_credits: target } };
+}
+
+// Conservative "save this suggestion" detector. Fires only on an explicit
+// save/keep/bookmark request about a major / career / university (never a
+// schedule). Lets the Recommendations save work with ZERO Gemini calls by
+// snapshotting the previous assistant message.
+function parseSaveIntent(text: string): { kind: "major" | "career" | "university" } | null {
+  const t = text.toLowerCase();
+  if (!/\b(save|keep|bookmark|pin)\b/.test(t)) return null;
+  if (!/\b(recommendation|recommend|suggestion|suggest|advice|idea|this|that|it)\b/.test(t)) return null;
+  // Schedule/course-list saves are handled elsewhere; don't hijack them.
+  if (/\b(schedule|timetable|course|courses|credit|credits)\b/.test(t)) return null;
+  let kind: "major" | "career" | "university" = "major";
+  if (/\b(career|careers|job|jobs|profession\w*|work field|workplace)\b/.test(t)) kind = "career";
+  else if (/\b(universit\w*|college|study abroad|abroad|grad school|graduate school)\b/.test(t)) kind = "university";
+  else if (/\b(major|majors|degree|specializ\w*|field of study|discipline)\b/.test(t)) kind = "major";
+  return { kind };
 }
 
 // Deterministic, Gemini-free renderer for a tool result. Shared by the
@@ -361,6 +379,50 @@ export async function POST(req: Request) {
             }
           } catch (e) {
             console.error("[/api/chat] deterministic shortcut failed:", e);
+          }
+        }
+
+        // Deterministic "save this suggestion" → write straight to the
+        // Recommendations page with ZERO Gemini calls. Works for every user
+        // (recommendations is a real per-user table). Snapshots the previous
+        // assistant message as the saved summary.
+        if (!fullText.trim()) {
+          try {
+            const save = parseSaveIntent(latestUserMsg.content);
+            if (save && !parseAdvisorIntent(latestUserMsg.content)) {
+              const prevAssistant = [...messages.slice(0, -1)]
+                .reverse()
+                .find(
+                  (m) => m.role === "assistant" && !!m.content && m.content.trim().length > 0,
+                );
+              if (prevAssistant) {
+                const body = prevAssistant.content.trim();
+                const firstSentence = body.split(/(?<=[.!?])\s|\n/)[0] || body;
+                const title = firstSentence.slice(0, 90).trim();
+                const summary = body.slice(0, 600).trim();
+                const payload = await runAdvisorTool(
+                  "save_recommendation",
+                  { kind: save.kind, title, summary },
+                  supabase,
+                  user,
+                );
+                toolTraces.push({
+                  tool: "save_recommendation",
+                  args: { kind: save.kind, title },
+                  result: payload,
+                });
+                const ok = (payload as { saved?: boolean }).saved === true;
+                const msg = ok
+                  ? `Saved that to your Recommendations page — it's filed under ${save.kind}.`
+                  : `I couldn't save that just now: ${
+                      (payload as { error?: string }).error ?? "unknown error"
+                    }`;
+                fullText = msg;
+                controller.enqueue(encoder.encode(msg));
+              }
+            }
+          } catch (e) {
+            console.error("[/api/chat] save shortcut failed:", e);
           }
         }
 

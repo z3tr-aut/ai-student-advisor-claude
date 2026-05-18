@@ -85,7 +85,36 @@ export const advisorTools: FunctionDeclaration[] = [
       required: ["target_credits"],
     },
   },
+  {
+    name: "save_recommendation",
+    description:
+      "Save a suggestion to the student's Recommendations page for later reference. " +
+      "Call this ONLY when the student explicitly asks to save/keep/bookmark a suggestion " +
+      "you just gave about their MAJOR, CAREER path, or UNIVERSITY choice (not course schedules). " +
+      "Summarize the advice you just gave into a short title and a 1-2 sentence summary.",
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        kind: {
+          type: SchemaType.STRING,
+          description:
+            "What the recommendation is about. Exactly one of: 'major', 'career', 'university'.",
+        },
+        title: {
+          type: SchemaType.STRING,
+          description: "A short headline for the saved card, e.g. 'Software Engineering major' or 'Data Analyst career path'.",
+        },
+        summary: {
+          type: SchemaType.STRING,
+          description: "1-2 sentence summary of the recommendation and why it fits the student.",
+        },
+      },
+      required: ["kind", "title", "summary"],
+    },
+  },
 ];
+
+const REC_KINDS = new Set(["major", "career", "university"]);
 
 function getFixtureStdId(user: User): number | string | undefined {
   const meta = user.user_metadata as { std_id?: number | string } | null | undefined;
@@ -153,6 +182,29 @@ export async function runAdvisorTool(
     }
 
     return serializeFixtureScheduleResult(scenario, result);
+  }
+
+  if (name === "save_recommendation") {
+    const kind = String(args.kind ?? "").toLowerCase().trim();
+    const title = typeof args.title === "string" ? args.title.trim() : "";
+    const summary = typeof args.summary === "string" ? args.summary.trim() : "";
+    if (!REC_KINDS.has(kind)) {
+      return { error: "kind must be one of: major, career, university." };
+    }
+    if (!title) {
+      return { error: "A title is required to save a recommendation." };
+    }
+    const { error } = await supabase.from("recommendations").insert({
+      user_id: user.id,
+      kind,
+      title: title.slice(0, 200),
+      summary: summary ? summary.slice(0, 1000) : null,
+      is_saved: true,
+    });
+    if (error) {
+      return { error: `Could not save the recommendation: ${error.message}` };
+    }
+    return { saved: true, kind, title };
   }
 
   return { error: `Unknown tool: ${name}` };
