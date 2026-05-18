@@ -139,9 +139,19 @@ export async function runAdvisorTool(
       preferences: { earliestStart, latestEnd, excludedDays },
     });
 
-    // NOTE: the My-Schedule snapshot is written AFTER the stream in the chat
-    // route (from the tool trace), not here — keeping this tool path free of
-    // extra I/O so a slow/failed write can never affect the model turn.
+    // Persist a snapshot so the My Schedule page mirrors exactly what the
+    // advisor just built (same target credits + preferences). Best-effort:
+    // a slow or failed write must never affect the tool result or the model
+    // turn, so it's awaited but fully swallowed on error.
+    try {
+      await supabase
+        .from("profiles")
+        .update({ last_schedule: { targetCredits: target, result } })
+        .eq("id", user.id);
+    } catch (e) {
+      console.error("[chat-tools] last_schedule snapshot write failed:", e);
+    }
+
     return serializeFixtureScheduleResult(scenario, result);
   }
 
