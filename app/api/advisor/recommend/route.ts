@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   } catch {
     body = {};
   }
-  const target = Math.max(1, Math.min(30, Number(body.targetCredits ?? 15) || 15));
+  const target = Number(body.targetCredits ?? 15) || 15;
 
   const outcome = await recommendForUser(supabase, user.id, target);
   if ("error" in outcome) {

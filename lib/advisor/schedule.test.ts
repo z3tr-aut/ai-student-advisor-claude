@@ -92,7 +92,7 @@ describe("matchesPreferences", () => {
 
 describe("recommendSchedule", () => {
   it("greedy-packs eligible courses up to the target load", () => {
-    const plan = [mkCourse("A", 3), mkCourse("B", 3), mkCourse("C", 3)];
+    const plan = [mkCourse("A", 4), mkCourse("B", 4), mkCourse("C", 4)];
     const sections = [
       mkSection("a1", "A", "Sunday", "08:00", "09:00"),
       mkSection("b1", "B", "Sunday", "09:00", "10:00"),
@@ -102,14 +102,14 @@ describe("recommendSchedule", () => {
       plan,
       sections,
       history: emptyHistory(),
-      targetCredits: 9,
+      targetCredits: 12,
     });
     expect(res.picks.map((p) => p.course.id).sort()).toEqual(["A", "B", "C"]);
-    expect(res.totalCredits).toBe(9);
+    expect(res.totalCredits).toBe(12);
   });
 
   it("never picks two conflicting sections", () => {
-    const plan = [mkCourse("A", 3), mkCourse("B", 3)];
+    const plan = [mkCourse("A", 6), mkCourse("B", 6)];
     const sections = [
       mkSection("a1", "A", "Sunday", "08:00", "09:30"),
       mkSection("b1", "B", "Sunday", "09:00", "10:30"),
@@ -119,7 +119,7 @@ describe("recommendSchedule", () => {
       plan,
       sections,
       history: emptyHistory(),
-      targetCredits: 6,
+      targetCredits: 12,
     });
     expect(res.picks).toHaveLength(2);
     expect(res.picks[0].section.id).toBe("a1");
@@ -127,7 +127,7 @@ describe("recommendSchedule", () => {
   });
 
   it("records 'all-conflict' when every section overlaps a pick", () => {
-    const plan = [mkCourse("A", 3), mkCourse("B", 3)];
+    const plan = [mkCourse("A", 6), mkCourse("B", 6)];
     const sections = [
       mkSection("a1", "A", "Sunday", "08:00", "10:00"),
       mkSection("b1", "B", "Sunday", "09:00", "10:00"),
@@ -136,7 +136,7 @@ describe("recommendSchedule", () => {
       plan,
       sections,
       history: emptyHistory(),
-      targetCredits: 6,
+      targetCredits: 12,
     });
     expect(res.picks.map((p) => p.course.id)).toEqual(["A"]);
     expect(res.unscheduled).toEqual([
@@ -145,13 +145,13 @@ describe("recommendSchedule", () => {
   });
 
   it("records 'out-of-window' when prefs filter every section", () => {
-    const plan = [mkCourse("A", 3)];
+    const plan = [mkCourse("A", 12)];
     const sections = [mkSection("a1", "A", "Sunday", "07:00", "08:00")];
     const res = recommendSchedule({
       plan,
       sections,
       history: emptyHistory(),
-      targetCredits: 3,
+      targetCredits: 12,
       preferences: { earliestStart: "08:00" },
     });
     expect(res.picks).toHaveLength(0);
@@ -161,20 +161,20 @@ describe("recommendSchedule", () => {
   });
 
   it("records 'no-section' when a course has no offering", () => {
-    const plan = [mkCourse("A", 3), mkCourse("B", 3)];
+    const plan = [mkCourse("A", 6), mkCourse("B", 6)];
     const sections = [mkSection("a1", "A", "Sunday", "08:00", "09:00")];
     const res = recommendSchedule({
       plan,
       sections,
       history: emptyHistory(),
-      targetCredits: 6,
+      targetCredits: 12,
     });
     expect(res.picks.map((p) => p.course.id)).toEqual(["A"]);
     expect(res.unscheduled).toEqual([{ course: plan[1], reason: "no-section" }]);
   });
 
   it("respects prereq locking via the engine", () => {
-    const plan = [mkCourse("A", 3), mkCourse("B", 3, ["A"])];
+    const plan = [mkCourse("A", 6), mkCourse("B", 6, ["A"])];
     const sections = [
       mkSection("a1", "A", "Sunday", "08:00", "09:00"),
       mkSection("b1", "B", "Monday", "08:00", "09:00"),
@@ -183,13 +183,13 @@ describe("recommendSchedule", () => {
       plan,
       sections,
       history: emptyHistory(),
-      targetCredits: 6,
+      targetCredits: 12,
     });
     expect(res.picks.map((p) => p.course.id)).toEqual(["A"]);
   });
 
   it("never picks a section that starts before earliestStart", () => {
-    const plan = [mkCourse("A", 3)];
+    const plan = [mkCourse("A", 12)];
     const sections = [
       mkSection("a1", "A", "Sunday", "07:00", "08:00"),
       mkSection("a2", "A", "Sunday", "09:00", "10:00"),
@@ -198,7 +198,7 @@ describe("recommendSchedule", () => {
       plan,
       sections,
       history: emptyHistory(),
-      targetCredits: 3,
+      targetCredits: 12,
       preferences: { earliestStart: "08:00" },
     });
     expect(res.picks).toHaveLength(1);
@@ -207,8 +207,8 @@ describe("recommendSchedule", () => {
 
   it("prioritizes required courses over electives", () => {
     const plan = [
-      mkCourse("E1", 3, [], "elective"),
-      mkCourse("R1", 3, [], "required"),
+      mkCourse("E1", 6, [], "elective"),
+      mkCourse("R1", 6, [], "required"),
     ];
     const sections = [
       mkSection("e1", "E1", "Sunday", "08:00", "09:00"),
@@ -218,7 +218,7 @@ describe("recommendSchedule", () => {
       plan,
       sections,
       history: emptyHistory(),
-      targetCredits: 3,
+      targetCredits: 12,
     });
     expect(res.picks.map((p) => p.course.id)).toEqual(["R1"]);
   });

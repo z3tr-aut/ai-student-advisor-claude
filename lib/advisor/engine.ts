@@ -6,6 +6,10 @@
  * plus human-readable warnings.
  */
 
+/** University rule: a semester load must be within this credit-hour band. */
+export const MIN_CREDITS = 12;
+export const MAX_CREDITS = 18;
+
 export type CourseType = "required" | "elective" | "university" | "faculty";
 
 export type Course = {
@@ -95,11 +99,27 @@ export function recommendForSemester(input: RecommendInput): RecommendResult {
   const { plan, history, targetCredits, planTotalCredits } = input;
   const warnings: string[] = [];
 
-  if (targetCredits <= 0) warnings.push("Target credit hours must be greater than 0.");
-  if (targetCredits > 18) warnings.push(`Target load ${targetCredits} exceeds the usual 18-hour maximum.`);
-
   const eligible = eligibleCourses(plan, history).sort(rank);
   const locked = lockedByPrereq(plan, history);
+  const creditsCompleted = plan
+    .filter((c) => history.passed.has(c.id))
+    .reduce((sum, c) => sum + c.credits, 0);
+
+  if (!(targetCredits >= MIN_CREDITS && targetCredits <= MAX_CREDITS)) {
+    warnings.push(
+      targetCredits > MAX_CREDITS
+        ? `Target load ${targetCredits} exceeds the ${MAX_CREDITS}-hour maximum. Choose between ${MIN_CREDITS} and ${MAX_CREDITS} credits.`
+        : `Target load ${targetCredits} is below the ${MIN_CREDITS}-hour minimum. Choose between ${MIN_CREDITS} and ${MAX_CREDITS} credits.`
+    );
+    return {
+      picks: [],
+      totalCredits: 0,
+      creditsCompleted,
+      warnings,
+      eligibleCount: eligible.length,
+      lockedByPrereq: locked,
+    };
+  }
 
   const picks: Course[] = [];
   let total = 0;
@@ -119,10 +139,6 @@ export function recommendForSemester(input: RecommendInput): RecommendResult {
     if (locked.length > 0) warnings.push(`No courses eligible yet — ${locked.length} course(s) waiting on prerequisites.`);
     else warnings.push("No courses remaining in this plan.");
   }
-
-  const creditsCompleted = plan
-    .filter((c) => history.passed.has(c.id))
-    .reduce((sum, c) => sum + c.credits, 0);
 
   if (planTotalCredits && creditsCompleted >= planTotalCredits) {
     warnings.push("You have already completed the credit hours required for this plan.");

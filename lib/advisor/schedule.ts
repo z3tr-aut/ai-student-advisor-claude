@@ -10,6 +10,8 @@
  */
 import {
   eligibleCourses,
+  MAX_CREDITS,
+  MIN_CREDITS,
   type Course,
   type CourseType,
   type StudentHistory,
@@ -101,8 +103,14 @@ export function recommendSchedule(input: ScheduleInput): ScheduleResult {
   const { plan, sections, history, targetCredits, preferences } = input;
   const warnings: string[] = [];
 
-  if (targetCredits <= 0) warnings.push("Target credit hours must be greater than 0.");
-  if (targetCredits > 18) warnings.push(`Target load ${targetCredits} exceeds the usual 18-hour maximum.`);
+  if (!(targetCredits >= MIN_CREDITS && targetCredits <= MAX_CREDITS)) {
+    warnings.push(
+      targetCredits > MAX_CREDITS
+        ? `Target load ${targetCredits} exceeds the ${MAX_CREDITS}-hour maximum. Choose between ${MIN_CREDITS} and ${MAX_CREDITS} credits.`
+        : `Target load ${targetCredits} is below the ${MIN_CREDITS}-hour minimum. Choose between ${MIN_CREDITS} and ${MAX_CREDITS} credits.`
+    );
+    return { picks: [], totalCredits: 0, warnings, unscheduled: [] };
+  }
 
   const eligible = eligibleCourses(plan, history).sort(rank);
 

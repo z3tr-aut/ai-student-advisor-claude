@@ -72,10 +72,20 @@ describe("recommendForSemester", () => {
     expect(res.totalCredits).toBe(12);
   });
 
-  it("warns when target exceeds 18", () => {
+  it("hard-blocks when target exceeds 18", () => {
     const plan = [mk("A", 3)];
     const res = recommendForSemester({ plan, history: emptyHistory(), targetCredits: 21 });
+    expect(res.picks).toEqual([]);
+    expect(res.totalCredits).toBe(0);
     expect(res.warnings.some((w) => /18/.test(w))).toBe(true);
+  });
+
+  it("hard-blocks when target is below 12", () => {
+    const plan = [mk("A", 3)];
+    const res = recommendForSemester({ plan, history: emptyHistory(), targetCredits: 9 });
+    expect(res.picks).toEqual([]);
+    expect(res.totalCredits).toBe(0);
+    expect(res.warnings.some((w) => /12/.test(w))).toBe(true);
   });
 
   it("never re-suggests a completed course", () => {
@@ -94,13 +104,13 @@ describe("recommendForSemester", () => {
       mk("R1", 3, [], "required"),
       mk("F1", 3, [], "faculty"),
     ];
-    const res = recommendForSemester({ plan, history: emptyHistory(), targetCredits: 3 });
+    const res = recommendForSemester({ plan, history: emptyHistory(), targetCredits: 12 });
     expect(res.picks[0].id).toBe("R1");
   });
 
-  it("warns when nothing fits in a tiny target load", () => {
-    const plan = [mk("A", 4)];
-    const res = recommendForSemester({ plan, history: emptyHistory(), targetCredits: 3 });
+  it("warns when no in-band load fits an oversized course", () => {
+    const plan = [mk("A", 13)];
+    const res = recommendForSemester({ plan, history: emptyHistory(), targetCredits: 12 });
     expect(res.picks).toEqual([]);
     expect(res.warnings.some((w) => /fit/i.test(w))).toBe(true);
   });

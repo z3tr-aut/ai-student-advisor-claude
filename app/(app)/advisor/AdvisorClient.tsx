@@ -86,19 +86,16 @@ export default function AdvisorClient({ student }: { student: StudentContext }) 
         </div>
         <input
           type="range"
-          min={3}
-          max={24}
+          min={12}
+          max={18}
           step={1}
           value={targetCredits}
           onChange={(e) => setTargetCredits(Number(e.target.value))}
           className="w-full accent-primary"
         />
         <div className="flex justify-between font-body text-label-md text-on-surface-variant">
-          <span>3</span>
-          <span className={targetCredits > 18 ? "text-red-500 font-semibold" : ""}>
-            {targetCredits > 18 ? "⚠ exceeds typical max (18)" : ""}
-          </span>
-          <span>24</span>
+          <span>12</span>
+          <span>18</span>
         </div>
         <button
           onClick={onRecommend}
